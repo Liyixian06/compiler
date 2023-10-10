@@ -30,19 +30,19 @@ void yyerror(const char* s);
 %%
 
 
-lines   :       lines expr ';' { printf("%f\n", $2); }
+lines   :       lines expr ';' { printf("%s\n", $2); }
         |       lines ';'
         |
         ;
 
-expr    :       expr ADD expr   {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$, $3); strcat($$, "+"); }
-        |       expr MINUS expr   {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$, $3); strcat($$, "-"); }
-        |       expr TIMES expr   {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$, $3); strcat($$, "*"); }
-        |       expr DIVIDE expr   {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$, $3); strcat($$, "/"); }
+expr    :       expr ADD expr   {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$, $3); strcat($$, "+ "); }
+        |       expr MINUS expr   {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$, $3); strcat($$, "- "); }
+        |       expr TIMES expr   {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$, $3); strcat($$, "* "); }
+        |       expr DIVIDE expr   {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$, $3); strcat($$, "/ "); }
 		|       '(' expr ')'    { $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $2); }
         |       MINUS expr %prec UMINUS   { $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, "-"); strcpy($$, $2); }
-        |       NUMBER  { $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); }
-        |       ID  {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); }
+        |       NUMBER  { $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$," ");}
+        |       ID  {  $$ = (char *)malloc(50 * sizeof(char)); strcpy($$, $1); strcat($$," ");}
         ;
 
 %%

@@ -15,4 +15,4 @@ assign:
 	./assign
 
 clean:
-	rm rf *.tab.c *.tab.h calculator postfix assign
+	rm *.tab.c calculator postfix assign

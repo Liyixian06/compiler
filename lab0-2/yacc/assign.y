@@ -17,7 +17,7 @@ struct symbol_table_entry
 char idStr[50];
 int symbolNum=0;
 
-int retrieve_symbol(char* string);
+int search_symbol(char* string);
 void add_symbol(char* string);
 
 int yylex();
@@ -47,6 +47,7 @@ void yyerror(const char* s);
 
 
 lines   :       lines expr ';' { printf("%f\n", $2); }
+	|	lines assign ';' { printf("%f\n", $2); }
         |       lines ';'
         |
         ;
@@ -55,21 +56,21 @@ expr    :       expr ADD expr   { $$=$1+$3; }
         |       expr MINUS expr   { $$=$1-$3; }
         |       expr TIMES expr   { $$=$1*$3; }
         |       expr DIVIDE expr   { $$=$1/$3; }
-		|       '(' expr ')'    { $$=$2;}
+	|       '(' expr ')'    { $$=$2;}
         |       MINUS expr %prec UMINUS   {$$=-$2;}
         |       NUMBER  {$$=$1;}
         |       ID  {$$=$1->value;}
         ;
 
-assign  :       ID ASSIGN assign {$$=$1->value=$3;}
-        |       ID ASSIGN expr {$$=$1->value=$3;}
+assign	:       ID ASSIGN assign {$$=$1->value=$3;}
+	|       ID ASSIGN expr {$$=$1->value=$3;}
         ;
 
 %%
 
 // programs section
 
-int retrieve_symbol(char* string){
+int search_symbol(char* string){
     for(int i=0;i<symbolNum;i++){
         if(strcmp(symbol_table[i].id, string)==0)
             return i+1;
@@ -97,9 +98,9 @@ int yylex()
         if(t==' '||t=='\t'||t=='\n'){
             //do nothing
         }else if(isdigit(t)){
-      		yylval=0;
+      		yylval.num=0;
       		while(isdigit(t)){
-          	    yylval = yylval*10+t-'0';
+          	    yylval.num = yylval.num*10+t-'0';
           	    t=getchar();
       		}
         	ungetc(t,stdin);
@@ -112,12 +113,14 @@ int yylex()
                 idx++;
             }
             idStr[idx]='\0';
-            int pos = retrieve_symbol(idStr);
+            int pos = search_symbol(idStr);
             if(pos==0){
                 add_symbol(idStr);
                 yylval.ident = &symbol_table[symbolNum-1];
             }
-            yylval.ident = &symbol_table[pos-1];
+            else{
+            	yylval.ident = &symbol_table[pos-1];
+            }
             ungetc(t,stdin);
             return ID;
         }else if(t=='+'){

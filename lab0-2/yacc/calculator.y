@@ -36,7 +36,7 @@ expr    :       expr ADD expr   { $$=$1+$3; }
         |       expr MINUS expr   { $$=$1-$3; }
         |       expr TIMES expr   { $$=$1*$3; }
         |       expr DIVIDE expr   { $$=$1/$3; }
-		|       '(' expr ')'    { $$=$2;}
+	|       '(' expr ')'    { $$=$2;}
         |       MINUS expr %prec UMINUS   {$$=-$2;}
         |       NUMBER  {$$=$1;}
         ;
