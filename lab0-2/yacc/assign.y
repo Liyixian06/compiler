@@ -107,7 +107,7 @@ int yylex()
         	return NUMBER;
         }else if(t>='a'&& t<='z'||t>='A'&& t<='Z'||t=='_'){
             int idx=0;
-            while(t>='a'&& t<='z'||t>='A'&& t<='Z'||t=='_'){
+            while(t>='a'&& t<='z'||t>='A'&& t<='Z'||t=='_'||isdigit(t)){
                 idStr[idx]=t;
                 t=getchar();
                 idx++;
