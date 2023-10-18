@@ -36,8 +36,12 @@
     }
 
     node* search_id(char* s){
-        node* id = nullptr;
-        id = add_id(s);
+        node* id = idtable.head;
+        while(id->name!=s && id!=nullptr){
+            id = id->next;
+        }
+        if(id==nullptr)
+            id = add_id(s);
         return id;
     }
 
@@ -141,7 +145,7 @@ LINECOMMENT \/\/[^\n]*
 {DECIMIAL} {
     print_str(string("NUMBER\t") + string(yytext));
     words++;
-    chars += strlen(yytext);
+    chars += yyleng;
 }
 
 {OCTAL} {
@@ -149,7 +153,7 @@ LINECOMMENT \/\/[^\n]*
     sscanf(yytext, "%o", &num);
     print_str(string"NUMBER\t" + to_string(num));
     words++;
-    chars += strlen(yytext);
+    chars += yyleng;
 }
 
 {HEXADECIMAL} {
@@ -157,7 +161,7 @@ LINECOMMENT \/\/[^\n]*
     sscanf(yytext, "%x", &num);
     print_str(string"NUMBER\t" + to_string(num));
     words++;
-    chars += strlen(yytext);
+    chars += yyleng;
 }
 
 {ID} {
@@ -165,7 +169,7 @@ LINECOMMENT \/\/[^\n]*
     node* id = search_id(str);
     print_id(id);
     words++;
-    chars += strlen(yytext);
+    chars += yyleng;
 }
 
 {EOL} {lines++;}
