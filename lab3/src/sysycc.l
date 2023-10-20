@@ -30,14 +30,26 @@
         symbol_table(symbol_table* last) { prev = last; }
         symbol_table* get_prev(){ return prev; }
         symbol_table_entry* insert(string id){
-            symbol_table_entry entry;
-            table[id] = entry;
-            return &entry;
+            symbol_table_entry* entry = new symbol_table_entry;
+            table[id] = *entry;
+            /*
+            stringstream ss;
+            ss<<entry;
+            string entry_str = ss.str();
+            fprintf(yyout, "\tcreate table entry for %s, addr: %s\n", id.c_str(), entry_str.c_str());
+            */
+            return entry;
             //id_list[id_count] = id;
             //id_count++;
         }
         symbol_table_entry* search(string id){
             if(table.find(id)!=table.end()){
+            	/*
+            	stringstream ss;
+            	ss<<&table[id];
+            	string addr_str = ss.str();
+            	fprintf(yyout, "\tfind identifier %s, addr: %s\n", id.c_str(), addr_str.c_str());
+            	*/
                 return &table[id];
             }
             return nullptr;
@@ -259,6 +271,10 @@ int main(int argc, char **argv){
         }
     }
     yylex();
-    fprintf(yyout, "\n%8d%8d%8d\n", lines, words, chars);
+    fprintf(yyout, "\n\t%s\n", "id list as follows:");
+    for(int i=0; id_list[i]!=""; i++){
+    	fprintf(yyout, "\t%s\n", id_list[i].c_str());
+    }
+    fprintf(yyout, "\n\tlines: %8d, words: %8d, chars: %8d\n", lines, words, chars);
     return 0;
 }

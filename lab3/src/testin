@@ -2,7 +2,7 @@ int a;
 
 int main()
 {
-    int a;
+    int a, main;
     a = 1 + 2;
     if(a < 5)
         return 1;
