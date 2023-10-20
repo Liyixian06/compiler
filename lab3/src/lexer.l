@@ -9,6 +9,9 @@
 }
 %{
     int chars = 0, words = 0, lines = 0;
+    N = 1000;
+    string id_table[N];
+    /*
     struct node {
         char name[64];
         node* prev, * next;
@@ -18,7 +21,7 @@
         int count;
     };
     id_table idtable;
-    void init_idtable{
+    void init_idtable(id_table idtable){
         idtable.head = (node*)malloc(sizeof(node));
         idtable.head -> next = idtable.head -> prev = nullptr;
         idtable.tail = idtable.head;
@@ -29,7 +32,7 @@
         strcpy(id->name, s);
         idtable.tail->next = id;
         id->prev = idtable.tail;
-        idtable.next = nullptr;
+        idtable.tail->next = nullptr;
         idtable.tail = id;
         idtable.count++;
         return id;
@@ -44,6 +47,7 @@
             id = add_id(s);
         return id;
     }
+    */
 
     void print_str(string s){
         string info = "\t" + s + "\t" + to_string(yylineno) + "\n";
@@ -151,7 +155,7 @@ LINECOMMENT \/\/[^\n]*
 {OCTAL} {
     int num;
     sscanf(yytext, "%o", &num);
-    print_str(string"NUMBER\t" + to_string(num));
+    print_str(string("NUMBER\t") + to_string(num));
     words++;
     chars += yyleng;
 }
@@ -159,7 +163,7 @@ LINECOMMENT \/\/[^\n]*
 {HEXADECIMAL} {
     int num;
     sscanf(yytext, "%x", &num);
-    print_str(string"NUMBER\t" + to_string(num));
+    print_str(string("NUMBER\t") + to_string(num));
     words++;
     chars += yyleng;
 }
@@ -193,7 +197,7 @@ int main(int argc, char **argv){
             yyout = fopen(argv[2], "w");
         }
     }
-    init_idtable();
+    init_idtable(idtable);
     yylex();
     fprintf(yyout, "%8d%8d%8d%8d\n", lines, words, chars);
     return 0;
