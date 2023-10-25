@@ -558,7 +558,7 @@ char *yytext;
 #line 1 "sysycc.l"
 
 #line 15 "sysycc.l"
-    int chars = 0, words = 0, lines = 1, columns = 1;
+    int chars = 0, words = 0, lines = 0, columns = 0;
 
     string id_list[1000];
     int id_count = 0;
@@ -641,21 +641,25 @@ char *yytext;
 
 
     void print_str(string s){
-        string info = "\t" + s + "\t" + to_string(yylineno) + "\t" + to_string(columns) + "\n";
+        string info = "\t" + s + "\t" + to_string(lines) + "\t" + to_string(columns) + "\n";
         fputs(info.c_str(), yyout);
+    }
+    void print_num(string s, string num_str){
+    	string info = "\t" + s + "\t" + to_string(lines) + "\t" + to_string(columns) + "\t" + num_str + "\n";
+    	fputs(info.c_str(), yyout);
     }
     void print_id(string id){
         symbol_table_entry* addr = symbol_stack.lookup(id);
         stringstream ss;
         ss<<addr;
         string addr_str = ss.str();
-        string info = "\tIDENTIFIER\t" + id + "\t" + to_string(yylineno) + "\t" + to_string(columns) + "\t" + addr_str + "\n";
+        string info = "\tIDENTIFIER\t" + id + "\t" + to_string(lines) + "\t" + to_string(columns) + "\t" + addr_str + "\n";
         fputs(info.c_str(), yyout);
     }
-#line 656 "lex.yy.c"
+#line 660 "lex.yy.c"
 /* definitions section */
 
-#line 659 "lex.yy.c"
+#line 663 "lex.yy.c"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -873,11 +877,11 @@ YY_DECL
 		}
 
 	{
-#line 127 "sysycc.l"
+#line 131 "sysycc.l"
 
-#line 129 "sysycc.l"
+#line 133 "sysycc.l"
     /* rules section */
-#line 881 "lex.yy.c"
+#line 885 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -946,184 +950,184 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 130 "sysycc.l"
+#line 134 "sysycc.l"
 {print_str("INT\tint"); columns += strlen(yytext);}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 132 "sysycc.l"
+#line 136 "sysycc.l"
 {print_str("FLOAT\tfloat"); columns += strlen(yytext);}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 134 "sysycc.l"
+#line 138 "sysycc.l"
 {print_str("VOID\tvoid"); columns += strlen(yytext);}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 136 "sysycc.l"
+#line 140 "sysycc.l"
 {print_str("CONST\tconst"); columns += strlen(yytext);}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 138 "sysycc.l"
+#line 142 "sysycc.l"
 {print_str("IF\tif"); columns += strlen(yytext);}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 140 "sysycc.l"
+#line 144 "sysycc.l"
 {print_str("ELSE\telse"); columns += strlen(yytext);}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 142 "sysycc.l"
+#line 146 "sysycc.l"
 {print_str("WHILE\twhile"); columns += strlen(yytext);}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 144 "sysycc.l"
+#line 148 "sysycc.l"
 {print_str("FOR\tfor"); columns += strlen(yytext);}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 146 "sysycc.l"
+#line 150 "sysycc.l"
 {print_str("BREAK\tbreak"); columns += strlen(yytext);}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 148 "sysycc.l"
+#line 152 "sysycc.l"
 {print_str("CONTINUE\tcontinue"); columns += strlen(yytext);}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 150 "sysycc.l"
+#line 154 "sysycc.l"
 {print_str("RETURN\treturn"); columns += strlen(yytext);}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 152 "sysycc.l"
+#line 156 "sysycc.l"
 {print_str("ASSIGN\t="); columns += strlen(yytext);}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 154 "sysycc.l"
+#line 158 "sysycc.l"
 {print_str("EQUAL\t=="); columns += strlen(yytext);}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 156 "sysycc.l"
+#line 160 "sysycc.l"
 {print_str("NOTEQUAL\t!="); columns += strlen(yytext);}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 158 "sysycc.l"
+#line 162 "sysycc.l"
 {print_str("LESS\t<"); columns += strlen(yytext);}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 160 "sysycc.l"
+#line 164 "sysycc.l"
 {print_str("GREATER\t>"); columns += strlen(yytext);}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 162 "sysycc.l"
+#line 166 "sysycc.l"
 {print_str("LESSEQUAL\t<="); columns += strlen(yytext);}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 164 "sysycc.l"
+#line 168 "sysycc.l"
 {print_str("GREATEREQUAL\t>="); columns += strlen(yytext);}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 166 "sysycc.l"
+#line 170 "sysycc.l"
 {print_str("ADD\t+"); columns += strlen(yytext);}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 168 "sysycc.l"
+#line 172 "sysycc.l"
 {print_str("SUB\t-"); columns += strlen(yytext);}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 170 "sysycc.l"
+#line 174 "sysycc.l"
 {print_str("MUL\t*"); columns += strlen(yytext);}
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 172 "sysycc.l"
+#line 176 "sysycc.l"
 {print_str("DIV\t/"); columns += strlen(yytext);}
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 174 "sysycc.l"
+#line 178 "sysycc.l"
 {print_str("MOD\t%"); columns += strlen(yytext);}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 176 "sysycc.l"
+#line 180 "sysycc.l"
 {print_str("AND\t&&"); columns += strlen(yytext);}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 178 "sysycc.l"
+#line 182 "sysycc.l"
 {print_str("OR\t||"); columns += strlen(yytext);}
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 180 "sysycc.l"
+#line 184 "sysycc.l"
 {print_str("NOT\t!"); columns += strlen(yytext);}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 182 "sysycc.l"
+#line 186 "sysycc.l"
 {print_str("SEMICOLON\t;");} columns += strlen(yytext);
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 184 "sysycc.l"
+#line 188 "sysycc.l"
 {print_str("COLON\t:"); columns += strlen(yytext);}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 186 "sysycc.l"
+#line 190 "sysycc.l"
 {print_str("COMMA\t,"); columns += strlen(yytext);}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 188 "sysycc.l"
+#line 192 "sysycc.l"
 {print_str("LPAREN\t("); columns += strlen(yytext);}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 190 "sysycc.l"
+#line 194 "sysycc.l"
 {print_str("RPAREN\t)"); columns += strlen(yytext);}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 192 "sysycc.l"
+#line 196 "sysycc.l"
 {print_str("LBRACKET\t["); columns += strlen(yytext);}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 194 "sysycc.l"
+#line 198 "sysycc.l"
 {print_str("RBRACKET\t]"); columns += strlen(yytext);}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 196 "sysycc.l"
+#line 200 "sysycc.l"
 {print_str("LBRACE\t{"); columns += strlen(yytext);}
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 198 "sysycc.l"
+#line 202 "sysycc.l"
 {print_str("RBRACE\t}"); columns += strlen(yytext);}
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 200 "sysycc.l"
+#line 204 "sysycc.l"
 {
-    print_str(string("INT_CONST\t") + string(yytext));
+    print_num(string("INT_CONST\t") + string(yytext), string(yytext));
     words++;
     chars += yyleng;
     columns += strlen(yytext);
@@ -1131,11 +1135,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 207 "sysycc.l"
+#line 211 "sysycc.l"
 {
     int num;
     sscanf(yytext, "%o", &num);
-    print_str(string("OCT_CONST\t") + to_string(num));
+    print_num(string("OCT_CONST\t") + to_string(num), string(yytext));
     words++;
     chars += yyleng;
     columns += strlen(yytext);
@@ -1143,11 +1147,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 216 "sysycc.l"
+#line 220 "sysycc.l"
 {
     int num;
     sscanf(yytext, "%x", &num);
-    print_str(string("HEX_CONST\t") + to_string(num));
+    print_num(string("HEX_CONST\t") + to_string(num), string(yytext));
     words++;
     chars += yyleng;
     columns += strlen(yytext);
@@ -1155,11 +1159,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 225 "sysycc.l"
+#line 229 "sysycc.l"
 {
     float num;
     sscanf(yytext, "%f", &num);
-    print_str(string("FLOAT_CONST\t") + to_string(num));
+    print_num(string("FLOAT_CONST\t") + to_string(num), string(yytext));
     words++;
     chars += yyleng;
     columns += strlen(yytext);
@@ -1167,7 +1171,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 234 "sysycc.l"
+#line 238 "sysycc.l"
 {
     //print_str("IDENTIFIER\t"+ to_string(yytext));
     int flag = 0;
@@ -1190,46 +1194,46 @@ YY_RULE_SETUP
 case 41:
 /* rule 41 can match eol */
 YY_RULE_SETUP
-#line 253 "sysycc.l"
+#line 257 "sysycc.l"
 {columns = 0; lines++;}
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 255 "sysycc.l"
+#line 259 "sysycc.l"
 {columns += strlen(yytext);}
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 257 "sysycc.l"
+#line 261 "sysycc.l"
 {chars++;}
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 259 "sysycc.l"
+#line 263 "sysycc.l"
 {}
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 260 "sysycc.l"
+#line 264 "sysycc.l"
 {BEGIN COMMENT;}
 	YY_BREAK
 case 46:
 /* rule 46 can match eol */
 YY_RULE_SETUP
-#line 261 "sysycc.l"
+#line 265 "sysycc.l"
 {}
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 262 "sysycc.l"
+#line 266 "sysycc.l"
 {BEGIN INITIAL;}
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 264 "sysycc.l"
+#line 268 "sysycc.l"
 ECHO;
 	YY_BREAK
-#line 1233 "lex.yy.c"
+#line 1237 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(COMMENT):
 	yyterminate();
@@ -2247,7 +2251,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 264 "sysycc.l"
+#line 268 "sysycc.l"
 
 /* user code section */
 
@@ -2263,7 +2267,7 @@ int main(int argc, char **argv){
     for(int i=0; id_list[i]!=""; i++){
     	fprintf(yyout, "\t%s\n", id_list[i].c_str());
     }
-    fprintf(yyout, "\n\tlines: %8d, words: %8d, chars: %8d\n", lines, words, chars);
+    fprintf(yyout, "\n\tlines: %-8d words: %-8d chars: %-8d\n", lines, words, chars);
     return 0;
 }
 

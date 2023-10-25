@@ -12,7 +12,7 @@
     extern FILE *yyout;
 }
 %{
-    int chars = 0, words = 0, lines = 1, columns = 1;
+    int chars = 0, words = 0, lines = 0, columns = 0;
 
     string id_list[1000];
     int id_count = 0;
@@ -95,15 +95,19 @@
 
 
     void print_str(string s){
-        string info = "\t" + s + "\t" + to_string(yylineno) + "\t" + to_string(columns) + "\n";
+        string info = "\t" + s + "\t" + to_string(lines) + "\t" + to_string(columns) + "\n";
         fputs(info.c_str(), yyout);
+    }
+    void print_num(string s, string num_str){
+    	string info = "\t" + s + "\t" + to_string(lines) + "\t" + to_string(columns) + "\t" + num_str + "\n";
+    	fputs(info.c_str(), yyout);
     }
     void print_id(string id){
         symbol_table_entry* addr = symbol_stack.lookup(id);
         stringstream ss;
         ss<<addr;
         string addr_str = ss.str();
-        string info = "\tIDENTIFIER\t" + id + "\t" + to_string(yylineno) + "\t" + to_string(columns) + "\t" + addr_str + "\n";
+        string info = "\tIDENTIFIER\t" + id + "\t" + to_string(lines) + "\t" + to_string(columns) + "\t" + addr_str + "\n";
         fputs(info.c_str(), yyout);
     }
 %}
@@ -197,7 +201,7 @@ LINECOMMENT \/\/[^\n]*
 "}" {print_str("RBRACE\t}"); columns += strlen(yytext);}
 
 {DECIMIAL} {
-    print_str(string("INT_CONST\t") + string(yytext));
+    print_num(string("INT_CONST\t") + string(yytext), string(yytext));
     words++;
     chars += yyleng;
     columns += strlen(yytext);
@@ -206,7 +210,7 @@ LINECOMMENT \/\/[^\n]*
 {OCTAL} {
     int num;
     sscanf(yytext, "%o", &num);
-    print_str(string("OCT_CONST\t") + to_string(num));
+    print_num(string("OCT_CONST\t") + to_string(num), string(yytext));
     words++;
     chars += yyleng;
     columns += strlen(yytext);
@@ -215,7 +219,7 @@ LINECOMMENT \/\/[^\n]*
 {HEXADECIMAL} {
     int num;
     sscanf(yytext, "%x", &num);
-    print_str(string("HEX_CONST\t") + to_string(num));
+    print_num(string("HEX_CONST\t") + to_string(num), string(yytext));
     words++;
     chars += yyleng;
     columns += strlen(yytext);
@@ -224,7 +228,7 @@ LINECOMMENT \/\/[^\n]*
 {FLO} {
     float num;
     sscanf(yytext, "%f", &num);
-    print_str(string("FLOAT_CONST\t") + to_string(num));
+    print_num(string("FLOAT_CONST\t") + to_string(num), string(yytext));
     words++;
     chars += yyleng;
     columns += strlen(yytext);
@@ -275,6 +279,6 @@ int main(int argc, char **argv){
     for(int i=0; id_list[i]!=""; i++){
     	fprintf(yyout, "\t%s\n", id_list[i].c_str());
     }
-    fprintf(yyout, "\n\tlines: %8d, words: %8d, chars: %8d\n", lines, words, chars);
+    fprintf(yyout, "\n\tlines: %-8d words: %-8d chars: %-8d\n", lines, words, chars);
     return 0;
 }
