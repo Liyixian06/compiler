@@ -1,4 +1,6 @@
 # Compiler Principles
 
-- lab0-1 - Know your compiler & LLVM IR programming
-- lab0-2 - ARM assembly programming
+- lab1 - Know your compiler & LLVM IR programming
+- lab2 - ARM assembly programming
+- lab3 - lexer
+- OT1 - regex2NFA
