@@ -191,3 +191,5 @@ graph LR;
 ```
 
 测试正确。
+
+参考资料：[Implementing a Regular Expression Engine](https://deniskyashif.com/2019/02/17/implementing-a-regular-expression-engine/)

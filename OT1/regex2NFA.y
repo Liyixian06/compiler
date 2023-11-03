@@ -211,7 +211,7 @@ int main(void){
     printf("input the regex you want to convert, end by Enter + Ctrl + D: \n");
     yyin = stdin;
     outfile = fopen("output.md","w");
-    fprintf(outfile, "constructing NFA:\n");
+    fprintf(outfile, "constructing NFA:  \n");
     do{
         yyparse();
     }while(!feof(yyin));

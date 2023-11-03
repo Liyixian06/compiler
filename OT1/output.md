@@ -1,4 +1,4 @@
-constructing NFA:
+constructing NFA:  
 stateID: 0, accepting: 0  
 stateID: 1, accepting: 1  
 0 —— a ——> 1  
