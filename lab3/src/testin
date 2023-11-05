@@ -4,6 +4,9 @@ int main()
 {
     int a;
     a = 1 + 2.8 + 030 + 0x1A; // test numbers
+    /*
+    test blockcomments
+    */
     if(a < 5)
         return 1;
     return 0;
