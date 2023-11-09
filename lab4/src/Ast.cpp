@@ -29,14 +29,44 @@ void BinaryExpr::output(int level)
         case SUB:
             op_str = "sub";
             break;
+        case MUL:
+            op_str = "mul";
+            break;
+        case DIV:
+            op_str = "div";
+            break;
+        case MOD:
+            op_str = "mod";
+            break;
         case AND:
             op_str = "and";
             break;
         case OR:
             op_str = "or";
             break;
+        case NOT:
+            op_str = "not";
+            break;
+        case ASSIGN:
+            op_str = "assign";
+            break;
+        case EQUAL:
+            op_str = "equal";
+            break;
+        case NOTEQUAL:
+            op_str = "notequal";
+            break;
         case LESS:
             op_str = "less";
+            break;
+        case GREATER:
+            op_str = "greater";
+            break;
+        case LESSEQUAL:
+            op_str = "lessequal";
+            break;
+        case GREATEREQUAL:
+            op_str = "greaterequal";
             break;
     }
     fprintf(yyout, "%*cBinaryExpr\top: %s\n", level, ' ', op_str.c_str());
@@ -44,13 +74,45 @@ void BinaryExpr::output(int level)
     expr2->output(level + 4);
 }
 
+void UnaryExpr::output(int level)
+{
+    std::string op_str;
+    switch(op)
+    {
+        case ADD:
+            op_str = "add";
+            break;
+        case SUB:
+            op_str = "sub";
+            break;
+        case NOT:
+            op_str = "not";
+            break;
+    }
+    fprintf(yyout, "%*cUnaryExpr\top: %s\n", level, ' ', op_str.c_str());
+    expr->output(level + 4);
+}
+
 void Constant::output(int level)
 {
     std::string type, value;
     type = symbolEntry->getType()->toStr();
     value = symbolEntry->toStr();
-    fprintf(yyout, "%*cIntegerLiteral\tvalue: %s\ttype: %s\n", level, ' ',
+    switch (this->scale)
+    {
+        case 0:
+            fprintf(yyout, "%*cIntegerLiteral\tvalue: %s\ttype: %s\n", level, ' ',
             value.c_str(), type.c_str());
+            break;
+        case 1:
+            fprintf(yyout, "%*cHexLiteral\tvalue: %s\ttype: %s\n", level, ' ',
+            value.c_str(), type.c_str());
+            break;
+        case 2:
+            fprintf(yyout, "%*cOctLiteral\tvalue: %s\ttype: %s\n", level, ' ',
+            value.c_str(), type.c_str());
+            break;
+    }
 }
 
 void Id::output(int level)
@@ -62,6 +124,18 @@ void Id::output(int level)
     scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
     fprintf(yyout, "%*cId\tname: %s\tscope: %d\ttype: %s\n", level, ' ',
             name.c_str(), scope, type.c_str());
+}
+
+void FuncCallExp::output(int level)
+{
+    std::string name, type;
+    int scope;
+    name = symbolEntry->toStr();
+    type = symbolEntry->getType()->toStr();
+    scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
+    fprintf(yyout, "%*cFunctionCall function name: %s, scope: %d, type: %s\n", level, ' ', 
+            name.c_str(), scope, type.c_str());
+    params->output(level + 4);
 }
 
 void CompoundStmt::output(int level)
@@ -77,9 +151,15 @@ void SeqNode::output(int level)
     stmt2->output(level + 4);
 }
 
-void DeclStmt::output(int level)
+void VarDecl::output(int level)
 {
-    fprintf(yyout, "%*cDeclStmt\n", level, ' ');
+    fprintf(yyout, "%*cVarDecl\n", level, ' ');
+    id->output(level + 4);
+}
+
+void ConstDecl::output(int level)
+{
+    fprintf(yyout, "%*cConstDecl\n", level, ' ');
     id->output(level + 4);
 }
 
@@ -90,12 +170,53 @@ void IfStmt::output(int level)
     thenStmt->output(level + 4);
 }
 
+void FuncParam::output(int level)
+{
+    fprintf(yyout, "%*cFuncParam\n", level, ' ');
+}
+
+void FuncParams::output(int level)
+{
+    fprintf(yyout, "%*cFuncParams:\n", level, ' ');
+    param->output(level + 4);
+    prevparam->output(level + 4);
+}
+
+void FuncRParam::output(int level)
+{
+    fprintf(yyout, "%*cFuncRealParam\n", level, ' ');
+}
+
+void FuncRParams::output(int level)
+{
+    fprintf(yyout, "%*cFuncRealParams:\n", level, ' ');
+    param->output(level + 4);
+    prevparam->output(level + 4);
+}
+
 void IfElseStmt::output(int level)
 {
     fprintf(yyout, "%*cIfElseStmt\n", level, ' ');
     cond->output(level + 4);
     thenStmt->output(level + 4);
     elseStmt->output(level + 4);
+}
+
+void WhileStmt::output(int level)
+{
+    fprintf(yyout, "%*cWhileStmt\n", level, ' ');
+    cond->output(level + 4);
+    stmt->output(level + 4);
+}
+
+void BreakStmt::output(int level)
+{
+    fprintf(yyout, "%*cBreakStmt\n", level, ' ');
+}
+
+void ContinueStmt::output(int level)
+{
+    fprintf(yyout, "%*cContinueStmt\n", level, ' ');
 }
 
 void ReturnStmt::output(int level)
@@ -118,5 +239,11 @@ void FunctionDef::output(int level)
     type = se->getType()->toStr();
     fprintf(yyout, "%*cFunctionDefine function name: %s, type: %s\n", level, ' ', 
             name.c_str(), type.c_str());
+    params->output(level + 4);
     stmt->output(level + 4);
+}
+
+void EmptyStmt::output(int level)
+{
+    fprintf(yyout, "%*cEmptyStmt\n", level, ' ');
 }

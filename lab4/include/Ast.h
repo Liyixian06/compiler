@@ -30,7 +30,7 @@ private:
     int op;
     ExprNode *expr1, *expr2;
 public:
-    enum {ADD, SUB, MUL, DIV, MOD, AND, OR, NOT, EQUAL, LESS, GREATER, LESSEQUAL, GREATEREQUAL};
+    enum {ADD, SUB, MUL, DIV, MOD, AND, OR, NOT, ASSIGN, EQUAL, NOTEQUAL, LESS, GREATER, LESSEQUAL, GREATEREQUAL};
     BinaryExpr(SymbolEntry *se, int op, ExprNode*expr1, ExprNode*expr2) : ExprNode(se), op(op), expr1(expr1), expr2(expr2){};
     void output(int level);
 };
@@ -92,18 +92,64 @@ public:
     void output(int level);
 };
 
-class DeclStmt : public StmtNode
+class VarDecl : public StmtNode
 {
 private:
     Id *id;
+    ExprNode *expr; // 为空表示只声明，不赋初值
 public:
-    DeclStmt(Id *id) : id(id){};
+    VarDecl(Id *id, ExprNode *expr = nullptr) : id(id), expr(expr){};
     void output(int level);
 };
 
-//TODO: VarDecl, VarDef, ConstDecl, ConstDef
+class ConstDecl : public StmtNode
+{
+private:
+    Id *id;
+    ExprNode *expr;
+public:
+    ConstDecl(Id *id, ExprNode *expr = nullptr) : id(id), expr(expr){};
+    void output(int level);
+};
 
-//TODO: FuncParam, FuncParams, FuncRParams
+class FuncParam : public ExprNode
+{
+private:
+    Id *id;
+    ExprNode *expr;
+public:
+    FuncParam(SymbolEntry *se, Id *id, ExprNode *expr) : ExprNode(se), id(id), expr(expr){};
+    void output(int level);
+};
+
+class FuncParams : public ExprNode
+{
+private:
+    ExprNode *param;
+    ExprNode *prevparam;
+public:
+    FuncParams(SymbolEntry *se, ExprNode *param, ExprNode *prevparam) : ExprNode(se), param(param), prevparam(prevparam){};
+    void output(int level);
+};
+
+class FuncRParam : public ExprNode
+{
+private:
+    ExprNode *param;
+public:
+    FuncRParam(SymbolEntry *se, ExprNode *param) : ExprNode(se), param(param){};
+    void output(int level);
+};
+
+class FuncRParams : public ExprNode
+{
+private:
+    ExprNode *param;
+    ExprNode *prevparam;
+public:
+    FuncRParams(SymbolEntry *se, ExprNode *param, ExprNode *prevparam) : ExprNode(se), param(param), prevparam(prevparam){};
+    void output(int level);
+};
 
 class IfStmt : public StmtNode
 {
@@ -126,7 +172,29 @@ public:
     void output(int level);
 };
 
-//TODO: WhileStmt, BreakStmt, ContinueStmt
+class WhileStmt : public StmtNode
+{
+private:
+    ExprNode *cond;
+    StmtNode *stmt;
+public:
+    WhileStmt(ExprNode *cond, StmtNode *stmt) : cond(cond), stmt(stmt){};
+    void output(int level);
+};
+
+class BreakStmt : public StmtNode
+{
+public:
+    BreakStmt(){};
+    void output(int level);
+};
+
+class ContinueStmt : public StmtNode
+{
+public:
+    ContinueStmt(){};
+    void output(int level);
+};
 
 class ReturnStmt : public StmtNode
 {
@@ -152,8 +220,9 @@ class FunctionDef : public StmtNode
 private:
     SymbolEntry *se;
     StmtNode *stmt;
+    ExprNode *params;
 public:
-    FunctionDef(SymbolEntry *se, StmtNode *stmt) : se(se), stmt(stmt){};
+    FunctionDef(SymbolEntry *se, StmtNode *stmt, ExprNode *params = nullptr) : se(se), stmt(stmt), params(params){};
     void output(int level);
 };
 
