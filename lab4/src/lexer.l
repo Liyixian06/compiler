@@ -7,8 +7,6 @@
     #include "common.h"
     #include "parser.h"
     #include <string>
-    #include <map>
-    #include <stack>
     #include <math.h>
     #include <sstream>
     #include <malloc.h>
@@ -31,6 +29,7 @@
     	fputs(info.c_str(), yyout);
     }
 
+    /*
     inline void dump_tokens(const char* format, ...){
         va_list args;
         va_start(args, format);
@@ -38,7 +37,8 @@
             vfprintf(yyout, format, args);
         va_end(args);
     }
-    
+    */
+
 %}
 
 /* definitions section */
@@ -46,6 +46,17 @@ FLO [0-9]*\.[0-9]+([Ee][+-]?[0-9]+)?
 OCTAL 0[0-7]+
 HEXADECIMAL 0[xX][0-9a-fA-F]+
 DECIMIAL [1-9][0-9]*|0
+
+INT "int"
+FLOAT "float"
+VOID "void"
+CONST "const"
+IF "if"
+ELSE "else"
+WHILE "while"
+BREAK "break"
+CONTINUE "continue"
+RETURN "return"
 
 ID [a-zA-Z_][a-zA-Z0-9_]*
 EOL (\r\n|\n|\r)
@@ -61,7 +72,9 @@ LINECOMMENT \/\/[^\n]*
 %%
     /* rules section */
 "int" {
-    dump_tokens("INT\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("INT\tint"); 
+    columns += strlen(yytext);
     return INT;
 }
 
@@ -126,25 +139,70 @@ LINECOMMENT \/\/[^\n]*
 }
 
 {DECIMIAL} {
-    int decimal;
-    decimal = atoi(yytext);
-    dump_tokens("DECIMAL\t%s\t%d\n", yytext, decimal);
-    yylval.itype = decimal;
+    if(dump_tokens)
+        print_num(string("INT_CONST\t") + string(yytext), string(yytext));
+    words++;
+    chars += yyleng;
+    columns += strlen(yytext);
     return INTEGER;
 }
 
+{OCTAL} {
+    int num;
+    sscanf(yytext, "%o", &num);
+    if(dump_tokens)
+        print_num(string("OCT_CONST\t") + to_string(num), string(yytext));
+    words++;
+    chars += yyleng;
+    columns += strlen(yytext);
+    return OCT;
+}
+
+{HEXADECIMAL} {
+    int num;
+    sscanf(yytext, "%x", &num);
+    if(dump_tokens)
+        print_num(string("HEX_CONST\t") + to_string(num), string(yytext));
+    words++;
+    chars += yyleng;
+    columns += strlen(yytext);
+    return HEX;
+}
+
+{FLO} {
+    float num;
+    sscanf(yytext, "%f", &num);
+    if(dump_tokens)
+        print_num(string("FLOAT_CONST\t") + to_string(num), string(yytext));
+    words++;
+    chars += yyleng;
+    columns += strlen(yytext);
+    return FLO;
+}
+
 {ID} {
-    char *lexeme;
-    dump_tokens("ID\t%s\n", yytext);
-    lexeme = new char[strlen(yytext) + 1];
+    if(dump_tokens)
+        print_str(string("ID\t") + to_string(yytext));
+    words++;
+    chars += yyleng;
+    columns += strlen(yytext);
+    char *lexeme = new char[strlen(yytext) + 1];
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     return ID;
 }
 
-{EOL} yylineno++;
+{EOL} {columns = 0; lines++;}
 
-{WHITE}
+{WHITE} {columns += strlen(yytext);}
+
+. {chars++;}
+
+{LINECOMMENT} {}
+{COMMENTBEGIN} {BEGIN COMMENT;}
+<COMMENT>{COMMENTEOL} {lines++;}
+<COMMENT>{COMMENTELEMENT} {}
+<COMMENT>{COMMENTEND} {BEGIN INITIAL;}
 
     /*  Your code here (lab3). */
 %%
