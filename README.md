@@ -4,3 +4,4 @@
 - lab2 - ARM assembly programming
 - lab3 - lexer
 - OT1 - regex2NFA
+- lab4 - parser
