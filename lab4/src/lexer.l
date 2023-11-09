@@ -79,62 +79,232 @@ LINECOMMENT \/\/[^\n]*
 }
 
 "void" {
-    dump_tokens("VOID\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("VOID\tvoid");
+    columns += strlen(yyetxt);
     return VOID;
 }
 
+"float"{
+    if(dump_tokens)
+        print_str("FLOAT\tfloat");
+    columns += strlen(yytext);
+    return FLOAT;
+}
+
 "if" {
-    dump_tokens("IF\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("IF\tif"); 
+    columns += strlen(yytext);
     return IF;
 }
 
 "else" {
-    dump_tokens("ELSE\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("ELSE\telse"); 
+    columns += strlen(yytext);
     return ELSE;
 }
 
+"while"{
+    if(dump_tokens)
+        print_str("WHILE\twhile); 
+    columns += strlen(yytext);
+    return WHILE;
+}
+
+"for"{
+    if(dump_tokens)
+        print_str("FOR\tfor"); 
+    columns += strlen(yytext);
+    return FOR;
+}
+
+"break"{
+    if(dump_tokens)
+        print_str("BREAK\tbreak"); 
+    columns += strlen(yytext);
+    return BREAK;
+}
+
+"continue"{
+    if(dump_tokens)
+        print_str("CONTINUE\tcontinue"); 
+    columns += strlen(yytext);
+    return CONTINUE;
+}
 "return" {
-    dump_tokens("RETURN\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("RETURN\treturn"); 
+    columns += strlen(yytext);
     return RETURN;
 }
 
 "=" {
-    dump_tokens("ASSIGN\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("ASSIGN\t="); 
+    columns += strlen(yytext);
     return ASSIGN;
 }
 
+"=="{
+    if(dump_tokens)
+        print_str("EQUAL\t=="); 
+    columns += strlen(yytext);
+    return FOR;
+}
+
+"!="{
+    if(dump_tokens)
+        print_str("NOTEQUAL\t!="); 
+    columns += strlen(yytext);
+    return FOR;
+}
+
 "<" {
-    dump_tokens("LESS\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("LESS\t<"); 
+    columns += strlen(yytext);
     return LESS;
 }
 
+">"{
+    if(dump_tokens)
+        print_str("GREATER\t>"); 
+    columns += strlen(yytext);
+    return GREATER;
+}
+
+"<="{
+    if(dump_tokens)
+        print_str("LESSEQUAL\t<="); 
+    columns += strlen(yytext);
+    return LESSEQUAL;
+}
+
+">="{
+    if(dump_tokens)
+        print_str("GREATEREQUAL\t>="); 
+    columns += strlen(yytext);
+    return GREATEREQUAL;
+}
+
 "+" {
-    dump_tokens("ADD\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("ADD\t+"); 
+    columns += strlen(yytext);
     return ADD;
 }
 
+"-"{
+    if(dump_tokens)
+        print_str("SUB\t-"); 
+    columns += strlen(yytext);
+    return SUB;
+}
+
+"*"{
+    if(dump_tokens)
+        print_str("MUL\t*"); 
+    columns += strlen(yytext);
+    return MUL;
+}
+
+"/"{
+    if(dump_tokens)
+        print_str("DIV\t/"); 
+    columns += strlen(yytext);
+    return DIV;
+}
+
+"%"{
+    if(dump_tokens)
+        print_str("MOD\t%"); 
+    columns += strlen(yytext);
+    return MOD;
+}
+
+"&&"{
+    if(dump_tokens)
+        print_str("AND\t&&"); 
+    columns += strlen(yytext);
+    return AND;
+}
+
+"||"{
+    if(dump_tokens)
+        print_str("OR\t&&"); 
+    columns += strlen(yytext);
+    return OR;
+}
+
+"!"{
+    if(dump_tokens)
+        print_str("NOT\t!"); 
+    columns += strlen(yytext);
+    return NOT;
+}
+
 ";" {
-    dump_tokens("SEMICOLON\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("SEMICOLON\t;"); 
+    columns += strlen(yytext);
     return SEMICOLON;
 }
 
+":"{
+    if(dump_tokens)
+        print_str("COLON\t:"); 
+    columns += strlen(yytext);
+    return COLON;
+}
+
+","{
+    if(dump_tokens)
+        print_str("COMMA\t,"); 
+    columns += strlen(yytext);
+    return COMMA;
+}
+
 "(" {
-    dump_tokens("LPAREN\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("LPAREN\t("); 
+    columns += strlen(yytext);
     return LPAREN;
 }
 
 ")" {
-    dump_tokens("RPAREN\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("RPAREN\t)"); 
+    columns += strlen(yytext);
     return RPAREN;
 }
 
+"["{
+    if(dump_tokens)
+        print_str("LBRACKET\t["); 
+    columns += strlen(yytext);
+    return LBRACKET;
+}
+
+"]"{
+    if(dump_tokens)
+        print_str("RBRACKET\t]"); 
+    columns += strlen(yytext);
+    return RBRACKET;
+}
+
 "{" {
-    dump_tokens("LBRACE\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("LBRACE\t{"); 
+    columns += strlen(yytext);
     return LBRACE;
 }
 
 "}" {
-    dump_tokens("RBRACE\t%s\n", yytext);
+    if(dump_tokens)
+        print_str("RBRACE\t}"); 
+    columns += strlen(yytext);
     return RBRACE;
 }
 
@@ -169,6 +339,7 @@ LINECOMMENT \/\/[^\n]*
     return HEX;
 }
 
+/*从此开始*/
 {FLO} {
     float num;
     sscanf(yytext, "%f", &num);
