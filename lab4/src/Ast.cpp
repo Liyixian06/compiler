@@ -47,9 +47,6 @@ void BinaryExpr::output(int level)
         case NOT:
             op_str = "not";
             break;
-        case ASSIGN:
-            op_str = "assign";
-            break;
         case EQUAL:
             op_str = "equal";
             break;
@@ -173,6 +170,7 @@ void IfStmt::output(int level)
 void FuncParam::output(int level)
 {
     fprintf(yyout, "%*cFuncParam\n", level, ' ');
+    id->output(level + 4);
 }
 
 void FuncParams::output(int level)
@@ -185,6 +183,7 @@ void FuncParams::output(int level)
 void FuncRParam::output(int level)
 {
     fprintf(yyout, "%*cFuncRealParam\n", level, ' ');
+    param->output(level + 4);
 }
 
 void FuncRParams::output(int level)

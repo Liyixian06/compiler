@@ -30,7 +30,7 @@ private:
     int op;
     ExprNode *expr1, *expr2;
 public:
-    enum {ADD, SUB, MUL, DIV, MOD, AND, OR, NOT, ASSIGN, EQUAL, NOTEQUAL, LESS, GREATER, LESSEQUAL, GREATEREQUAL};
+    enum {ADD, SUB, MUL, DIV, MOD, AND, OR, NOT, EQUAL, NOTEQUAL, LESS, GREATER, LESSEQUAL, GREATEREQUAL};
     BinaryExpr(SymbolEntry *se, int op, ExprNode*expr1, ExprNode*expr2) : ExprNode(se), op(op), expr1(expr1), expr2(expr2){};
     void output(int level);
 };
@@ -118,7 +118,7 @@ private:
     Id *id;
     ExprNode *expr;
 public:
-    FuncParam(SymbolEntry *se, Id *id, ExprNode *expr) : ExprNode(se), id(id), expr(expr){};
+    FuncParam(SymbolEntry *se, Id *id, ExprNode *expr = nullptr) : ExprNode(se), id(id), expr(expr){};
     void output(int level);
 };
 

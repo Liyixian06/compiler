@@ -339,7 +339,6 @@ LINECOMMENT \/\/[^\n]*
     return HEX;
 }
 
-/*从此开始*/
 {FLO} {
     float num;
     sscanf(yytext, "%f", &num);

@@ -12,7 +12,7 @@
     #include "SymbolTable.h"
     #include "Type.h"
 }
-
+%define parse.error verbose
 %union {
     int itype;
     char* strtype;
@@ -23,15 +23,16 @@
 
 %start Program
 %token <strtype> ID 
-%token <itype> INTEGER
+%token <itype> INTEGER OCT HEX
 %token IF ELSE
-%token INT VOID
-%token LPAREN RPAREN LBRACE RBRACE SEMICOLON
-%token ADD SUB OR AND LESS ASSIGN
+%token INT VOID CONST
+%token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET SEMICOLON COLON COMMA
+%token ADD SUB MUL DIV MOD OR AND NOT EQUAL NOTEQUAL LESS GREATER LESSEQUAL GREATEREQUAL ASSIGN
+%token IF WHILE FOR BREAK CONTINUE
 %token RETURN
 
-%nterm <stmttype> Stmts Stmt AssignStmt BlockStmt IfStmt ReturnStmt DeclStmt FuncDef
-%nterm <exprtype> Exp AddExp Cond LOrExp PrimaryExp LVal RelExp LAndExp
+%nterm <stmttype> Stmts Stmt AssignStmt BlockStmt IfStmt WhileStmt ReturnStmt DeclStmt FuncDef VarDecl ConstDecl BreakStmt ContinueStmt
+%nterm <exprtype> Exp AddExp ConstExp MulExp Cond LOrExp UnaryExp PrimaryExp LVal RelExp LAndExp FuncParam FuncParams FuncRParam FuncRParams
 %nterm <type> Type
 
 %precedence THEN
@@ -52,11 +53,16 @@ Stmt
     : AssignStmt {$$=$1;}
     | BlockStmt {$$=$1;}
     | IfStmt {$$=$1;}
+    | WhileStmt ($$=$1;)
     | ReturnStmt {$$=$1;}
     | DeclStmt {$$=$1;}
     | FuncDef {$$=$1;}
+    | VarDecl {$$=$1;}
+    | ConstDecl {$$=$1;}
+    | BreakStmt {$$=$1;}
+    | ContinueStmt {$$=$1;}
     ;
-LVal
+LVal // 左值
     : ID {
         SymbolEntry *se;
         se = identifiers->lookup($1);
@@ -86,6 +92,7 @@ BlockStmt
             identifiers = identifiers->getPrev();
             delete top;
         }
+    | LBRACE RBRACE {$$ = new CompoundStmt();}
     ;
 IfStmt
     : IF LPAREN Cond RPAREN Stmt %prec THEN {
@@ -95,6 +102,17 @@ IfStmt
         $$ = new IfElseStmt($3, $5, $7);
     }
     ;
+WhileStmt
+    : WHILE LPAREN Cond RPAREN Stmt {
+        $$ = new WhileStmt($3, $5);
+    }
+    ;
+BreakStmt
+    :   BREAK SEMICOLON {$$ = new BreakStmt($1);}
+    ;
+ContinueStmt
+    :   CONTINUE SEMICOLON {$$ = new ContinueStmt($1);}
+    ;
 ReturnStmt
     :
     RETURN Exp SEMICOLON{
@@ -102,6 +120,10 @@ ReturnStmt
     }
     ;
 Exp
+    :
+    AddExp {$$ = $1;}
+    ;
+ConstExp
     :
     AddExp {$$ = $1;}
     ;
