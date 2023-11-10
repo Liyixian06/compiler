@@ -44,9 +44,6 @@ void BinaryExpr::output(int level)
         case OR:
             op_str = "or";
             break;
-        case NOT:
-            op_str = "not";
-            break;
         case EQUAL:
             op_str = "equal";
             break;
@@ -151,12 +148,26 @@ void SeqNode::output(int level)
 void VarDecl::output(int level)
 {
     fprintf(yyout, "%*cVarDecl\n", level, ' ');
+    prevdef->output(level + 4);
+    def->output(level + 4);
+}
+
+void VarDef::output(int level)
+{
+    fprintf(yyout, "%*cVarDef\n", level, ' ');
     id->output(level + 4);
 }
 
 void ConstDecl::output(int level)
 {
     fprintf(yyout, "%*cConstDecl\n", level, ' ');
+    prevdef->output(level + 4);
+    def->output(level + 4);
+}
+
+void ConstDef::output(int level)
+{
+    fprintf(yyout, "%*cConstDef\n", level, ' ');
     id->output(level + 4);
 }
 
@@ -176,8 +187,8 @@ void FuncParam::output(int level)
 void FuncParams::output(int level)
 {
     fprintf(yyout, "%*cFuncParams:\n", level, ' ');
-    param->output(level + 4);
     prevparam->output(level + 4);
+    param->output(level + 4);
 }
 
 void FuncRParam::output(int level)
@@ -189,8 +200,8 @@ void FuncRParam::output(int level)
 void FuncRParams::output(int level)
 {
     fprintf(yyout, "%*cFuncRealParams:\n", level, ' ');
-    param->output(level + 4);
     prevparam->output(level + 4);
+    param->output(level + 4);
 }
 
 void IfElseStmt::output(int level)

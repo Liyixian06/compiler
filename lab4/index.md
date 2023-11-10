@@ -1,0 +1,99 @@
+# Parser  
+## Stmt  
+- AssignStmt
+    - Lval ASSIGN Exp ';'
+- BlockStmt
+    - '{' Stmts '}'
+    - '{' '}'
+- IfStmt
+    - IF '(' Cond ')' Stmt THEN
+    - IF '(' Cond ')' Stmt ELSE Stmt
+- WhileStmt
+    - WHILE '(' Cond ')' '{' Stmt '}'
+- BreakStmt
+    - BREAK ';'
+- ContinueStmt
+    - CONTINUE ';'
+- ReturnStmt
+    - RETURN ';'
+    - RETURN Exp ';'
+- EmptyStmt
+    - ';'
+- DeclStmt  
+    - VarDecl
+    - ConstDecl
+- FuncDef
+    - Type ID '(' FuncParams ')' BlockStmt
+    - Type ID '(' ')' BlockStmt
+- VarDecl
+    - Type VarDefList ';'
+- ConstDecl
+    - CONST Type ConstDefList ';'
+- VarDefList
+    - VarDef
+    - VarDeflist ',' VarDef
+- ConstDefList
+    - ConstDef
+    - ConstDefList ',' ConstDef
+- VarDef
+    - ID
+    - ID ASSIGN Exp
+- ConstDef
+    - ID ASSIGN ConstExp
+
+## Exp  
+- Lval
+    - ID
+- PrimaryExp
+    - '(' Exp ')'
+    - Lval
+    - Number
+- UnaryExp
+    - PrimaryExp
+    - FuncCall
+    - op UnaryExp
+- MulExp
+    - UnaryExp
+    - MulExp op UnaryExp
+- AddExp
+    - MulExp
+    - AddExp op MulExp
+- RelExp
+    - AddExp
+    - RelExp op AddExp
+- EqExp
+    - RelExp
+    - EqExp op Relexp
+- LAndExp
+    - EqExp
+    - LAndExp AND Eqexp
+- LOrExp
+    - LAndExp
+    - LOrExp OR LAndExp
+- ConstExp
+    - AddExp
+- Cond
+    - LOrExp
+- FuncCall
+    - ID '(' FuncRParams ')'
+    - ID '(' ')'
+- FuncParam
+    - Type ID ASSIGN Exp
+    - Type ID
+- FuncParams
+    - FuncParams ',' FuncParam
+    - FuncParam
+- FuncRParams
+    - FuncRParams ',' Exp
+    - Exp
+
+---
+
+- Type
+    - INT
+    - VOID
+    - FLOAT
+- Number
+    - INTEGER
+    - HEX
+    - OCT

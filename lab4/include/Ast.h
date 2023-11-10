@@ -30,7 +30,7 @@ private:
     int op;
     ExprNode *expr1, *expr2;
 public:
-    enum {ADD, SUB, MUL, DIV, MOD, AND, OR, NOT, EQUAL, NOTEQUAL, LESS, GREATER, LESSEQUAL, GREATEREQUAL};
+    enum {ADD, SUB, MUL, DIV, MOD, AND, OR, EQUAL, NOTEQUAL, LESS, GREATER, LESSEQUAL, GREATEREQUAL};
     BinaryExpr(SymbolEntry *se, int op, ExprNode*expr1, ExprNode*expr2) : ExprNode(se), op(op), expr1(expr1), expr2(expr2){};
     void output(int level);
 };
@@ -79,7 +79,7 @@ class CompoundStmt : public StmtNode
 private:
     StmtNode *stmt;
 public:
-    CompoundStmt(StmtNode *stmt) : stmt(stmt) {};
+    CompoundStmt(StmtNode *stmt = nullptr) : stmt(stmt) {};
     void output(int level);
 };
 
@@ -95,40 +95,60 @@ public:
 class VarDecl : public StmtNode
 {
 private:
+    StmtNode *prevdef;
+    StmtNode *def;
+public:
+    VarDecl(StmtNode *prevdef, StmtNode *def) : prevdef(prevdef), def(def){};
+    void output(int level);
+};
+
+class VarDef : public StmtNode
+{
+private:
     Id *id;
     ExprNode *expr; // 为空表示只声明，不赋初值
 public:
-    VarDecl(Id *id, ExprNode *expr = nullptr) : id(id), expr(expr){};
+    VarDef(Id *id, ExprNode *expr = nullptr) : id(id), expr(expr){};
     void output(int level);
 };
 
 class ConstDecl : public StmtNode
 {
 private:
-    Id *id;
-    ExprNode *expr;
+    StmtNode *prevdef;
+    StmtNode *def;
 public:
-    ConstDecl(Id *id, ExprNode *expr = nullptr) : id(id), expr(expr){};
+    ConstDecl(StmtNode *prevdef, StmtNode *def) : prevdef(prevdef), def(def){};
     void output(int level);
 };
 
-class FuncParam : public ExprNode
+class ConstDef : public StmtNode
 {
 private:
     Id *id;
     ExprNode *expr;
 public:
-    FuncParam(SymbolEntry *se, Id *id, ExprNode *expr = nullptr) : ExprNode(se), id(id), expr(expr){};
+    ConstDef(Id *id, ExprNode *expr) : id(id), expr(expr){};
     void output(int level);
 };
 
-class FuncParams : public ExprNode
+class FuncParam : public StmtNode
 {
 private:
-    ExprNode *param;
-    ExprNode *prevparam;
+    Id *id;
+    ExprNode *expr;
 public:
-    FuncParams(SymbolEntry *se, ExprNode *param, ExprNode *prevparam) : ExprNode(se), param(param), prevparam(prevparam){};
+    FuncParam(Id *id, ExprNode *expr = nullptr) : id(id), expr(expr){};
+    void output(int level);
+};
+
+class FuncParams : public StmtNode
+{
+private:
+    StmtNode *prevparam;
+    StmtNode *param;
+public:
+    FuncParams(StmtNode *prevparam, StmtNode *param) : prevparam(prevparam), param(param){};
     void output(int level);
 };
 
@@ -144,10 +164,10 @@ public:
 class FuncRParams : public ExprNode
 {
 private:
-    ExprNode *param;
     ExprNode *prevparam;
+    ExprNode *param;
 public:
-    FuncRParams(SymbolEntry *se, ExprNode *param, ExprNode *prevparam) : ExprNode(se), param(param), prevparam(prevparam){};
+    FuncRParams(SymbolEntry *se, ExprNode *prevparam, ExprNode *param) : ExprNode(se), prevparam(prevparam), param(param){};
     void output(int level);
 };
 
@@ -201,7 +221,7 @@ class ReturnStmt : public StmtNode
 private:
     ExprNode *retValue;
 public:
-    ReturnStmt(ExprNode*retValue) : retValue(retValue) {};
+    ReturnStmt(ExprNode*retValue = nullptr) : retValue(retValue) {};
     void output(int level);
 };
 
@@ -220,9 +240,9 @@ class FunctionDef : public StmtNode
 private:
     SymbolEntry *se;
     StmtNode *stmt;
-    ExprNode *params;
+    StmtNode *params;
 public:
-    FunctionDef(SymbolEntry *se, StmtNode *stmt, ExprNode *params = nullptr) : se(se), stmt(stmt), params(params){};
+    FunctionDef(SymbolEntry *se, StmtNode *stmt, StmtNode *params = nullptr) : se(se), stmt(stmt), params(params){};
     void output(int level);
 };
 
