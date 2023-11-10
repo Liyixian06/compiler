@@ -129,13 +129,13 @@ void FuncCallExp::output(int level)
     scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
     fprintf(yyout, "%*cFunctionCall function name: %s, scope: %d, type: %s\n", level, ' ', 
             name.c_str(), scope, type.c_str());
-    params->output(level + 4);
+    if(params) params->output(level + 4);
 }
 
 void CompoundStmt::output(int level)
 {
     fprintf(yyout, "%*cCompoundStmt\n", level, ' ');
-    stmt->output(level + 4);
+    if(stmt) stmt->output(level + 4);
 }
 
 void SeqNode::output(int level)
@@ -156,6 +156,7 @@ void VarDef::output(int level)
 {
     fprintf(yyout, "%*cVarDef\n", level, ' ');
     id->output(level + 4);
+    if(expr) expr->output(level + 4);
 }
 
 void ConstDecl::output(int level)
@@ -169,6 +170,7 @@ void ConstDef::output(int level)
 {
     fprintf(yyout, "%*cConstDef\n", level, ' ');
     id->output(level + 4);
+    expr->output(level + 4);
 }
 
 void IfStmt::output(int level)
@@ -182,6 +184,7 @@ void FuncParam::output(int level)
 {
     fprintf(yyout, "%*cFuncParam\n", level, ' ');
     id->output(level + 4);
+    if(expr) expr->output(level + 4);
 }
 
 void FuncParams::output(int level)
@@ -232,7 +235,7 @@ void ContinueStmt::output(int level)
 void ReturnStmt::output(int level)
 {
     fprintf(yyout, "%*cReturnStmt\n", level, ' ');
-    retValue->output(level + 4);
+    if(retValue) retValue->output(level + 4);
 }
 
 void AssignStmt::output(int level)
@@ -249,7 +252,7 @@ void FunctionDef::output(int level)
     type = se->getType()->toStr();
     fprintf(yyout, "%*cFunctionDefine function name: %s, type: %s\n", level, ' ', 
             name.c_str(), type.c_str());
-    params->output(level + 4);
+    if(params) params->output(level + 4);
     stmt->output(level + 4);
 }
 

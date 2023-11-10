@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include "common.h"
 #include "Ast.h"
+#include "SymbolTable.h"
+#include "Type.h"
 
 extern FILE *yyin;
 extern FILE *yyout;
@@ -50,6 +52,21 @@ int main(int argc, char *argv[])
         fprintf(stderr, "%s: fail to open output file\n", outfile);
         exit(EXIT_FAILURE);
     }
+    SymbolEntry *se1,*se2,*se3,*se4,*se5,*se6,*se7;
+    se1 = new IdentifierSymbolEntry(TypeSystem::intType, "getint", identifiers->getLevel());
+    identifiers->install("getint", se1);
+    se2 = new IdentifierSymbolEntry(TypeSystem::intType, "getch", identifiers->getLevel());
+    identifiers->install("getch", se2);
+    se3 = new IdentifierSymbolEntry(TypeSystem::intType, "getarray", identifiers->getLevel());
+    identifiers->install("getarray", se3);
+    se4 = new IdentifierSymbolEntry(TypeSystem::voidType, "putint", identifiers->getLevel());
+    identifiers->install("putint", se4);
+    se5 = new IdentifierSymbolEntry(TypeSystem::voidType, "putch", identifiers->getLevel());
+    identifiers->install("putch", se5);
+    se6 = new IdentifierSymbolEntry(TypeSystem::voidType, "putarray", identifiers->getLevel());
+    identifiers->install("putarray", se6);
+    se7 = new IdentifierSymbolEntry(TypeSystem::voidType, "putf", identifiers->getLevel());
+    identifiers->install("putf", se7);
     yyparse();
     if(dump_type == AST)
         ast.output();

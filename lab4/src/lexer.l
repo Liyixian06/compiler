@@ -82,6 +82,13 @@ LINECOMMENT \/\/[^\n]*
     return VOID;
 }
 
+"const" {
+    if(dump_type == TOKENS)
+        print_str("CONST\tconst");
+    columns += strlen(yytext);
+    return CONST;
+}
+
 "if" {
     if(dump_type == TOKENS)
         print_str("IF\tif"); 
@@ -101,13 +108,6 @@ LINECOMMENT \/\/[^\n]*
         print_str("WHILE\twhile"); 
     columns += strlen(yytext);
     return WHILE;
-}
-
-"for" {
-    if(dump_type == TOKENS)
-        print_str("FOR\tfor"); 
-    columns += strlen(yytext);
-    return FOR;
 }
 
 "break" {
@@ -141,14 +141,14 @@ LINECOMMENT \/\/[^\n]*
     if(dump_type == TOKENS)
         print_str("EQUAL\t=="); 
     columns += strlen(yytext);
-    return FOR;
+    return EQUAL;
 }
 
 "!=" {
     if(dump_type == TOKENS)
         print_str("NOTEQUAL\t!="); 
     columns += strlen(yytext);
-    return FOR;
+    return NOTEQUAL;
 }
 
 "<" {
@@ -304,6 +304,7 @@ LINECOMMENT \/\/[^\n]*
     words++;
     chars += yyleng;
     columns += strlen(yytext);
+    yylval.itype = atoi(yytext);
     return INTEGER;
 }
 
@@ -315,6 +316,7 @@ LINECOMMENT \/\/[^\n]*
     words++;
     chars += yyleng;
     columns += strlen(yytext);
+    yylval.itype = num;
     return OCT;
 }
 
@@ -326,6 +328,7 @@ LINECOMMENT \/\/[^\n]*
     words++;
     chars += yyleng;
     columns += strlen(yytext);
+    yylval.itype = num;
     return HEX;
 }
 
