@@ -34,7 +34,7 @@
 %token EQUAL NOTEQUAL LESS GREATER LESSEQUAL GREATEREQUAL
 %token RETURN
 
-%nterm <stmttype> Stmts Stmt AssignStmt BlockStmt
+%nterm <stmttype> Stmts Stmt AssignStmt BlockStmt ExprStmt
 %nterm <stmttype> IfStmt WhileStmt BreakStmt ContinueStmt ReturnStmt EmptyStmt
 %nterm <stmttype> DeclStmt VarDecl ConstDecl VarDefList VarDef ConstDefList ConstDef
 %nterm <stmttype> FuncDef FuncParam FuncParams
@@ -59,6 +59,7 @@ Stmts
 Stmt
     : AssignStmt {$$=$1;}
     | BlockStmt {$$=$1;}
+    | ExprStmt {$$=$1;}
     | IfStmt {$$=$1;}
     | WhileStmt {$$=$1;}
     | BreakStmt {$$=$1;}
@@ -100,6 +101,10 @@ BlockStmt
         }
     | LBRACE RBRACE {$$ = new CompoundStmt();}
     ;
+ExprStmt
+    : Exp SEMICOLON {
+        $$ = new ExprStmt($1);
+    }
 IfStmt
     : IF LPAREN Cond RPAREN Stmt %prec THEN {
         $$ = new IfStmt($3, $5);
@@ -208,7 +213,7 @@ ConstDef
 
 Exp
     :
-    AddExp {$$ = $1;}
+    LOrExp {$$ = $1;}
     ;
 PrimaryExp
     :
@@ -314,7 +319,7 @@ EqExp
     ;
 LAndExp
     :
-    RelExp {$$ = $1;}
+    EqExp {$$ = $1;}
     |
     LAndExp AND EqExp
     {
@@ -344,10 +349,20 @@ FuncCall
     :
     ID LPAREN RPAREN { // main()
         SymbolEntry *se = identifiers->lookup($1);
+        if(se == nullptr){
+            fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
+            delete []$1;
+            assert(se!=nullptr);
+        }
         $$ = new FuncCallExp(se);
     }
     | ID LPAREN FuncRParams RPAREN { //add(a,b)
         SymbolEntry *se = identifiers->lookup($1);
+        if(se == nullptr){
+            fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
+            delete []$1;
+            assert(se!=nullptr);
+        }
         $$ = new FuncCallExp(se, $3);
     }
     ;

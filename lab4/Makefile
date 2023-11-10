@@ -22,7 +22,7 @@ TESTCASE = $(shell find $(TEST_PATH) -name "*.sy")
 OUTPUT_LAB3 = $(addsuffix .toks, $(basename $(TESTCASE)))
 OUTPUT_LAB4 = $(addsuffix .ast, $(basename $(TESTCASE)))
 
-.phony:all app run gdb testlab3 testlab4 clean 
+.phony:all app run gdb testlab3 testlab4 clean cleanout
 
 all:app
 
@@ -63,3 +63,6 @@ testlab4:app $(OUTPUT_LAB4)
 
 clean:
 	@rm -rf $(BUILD_PATH) $(PARSER) $(LEXER) $(PARSERH) $(OUTPUT_LAB3) $(OUTPUT_LAB4) *.out *.toks *.ast
+
+cleanout:
+	@rm -rf $(OUTPUT_LAB3) $(OUTPUT_LAB4) *.out *.toks *.ast

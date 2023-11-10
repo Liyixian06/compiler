@@ -52,21 +52,53 @@ int main(int argc, char *argv[])
         fprintf(stderr, "%s: fail to open output file\n", outfile);
         exit(EXIT_FAILURE);
     }
-    SymbolEntry *se1,*se2,*se3,*se4,*se5,*se6,*se7;
-    se1 = new IdentifierSymbolEntry(TypeSystem::intType, "getint", identifiers->getLevel());
-    identifiers->install("getint", se1);
-    se2 = new IdentifierSymbolEntry(TypeSystem::intType, "getch", identifiers->getLevel());
-    identifiers->install("getch", se2);
-    se3 = new IdentifierSymbolEntry(TypeSystem::intType, "getarray", identifiers->getLevel());
-    identifiers->install("getarray", se3);
-    se4 = new IdentifierSymbolEntry(TypeSystem::voidType, "putint", identifiers->getLevel());
-    identifiers->install("putint", se4);
-    se5 = new IdentifierSymbolEntry(TypeSystem::voidType, "putch", identifiers->getLevel());
-    identifiers->install("putch", se5);
-    se6 = new IdentifierSymbolEntry(TypeSystem::voidType, "putarray", identifiers->getLevel());
-    identifiers->install("putarray", se6);
-    se7 = new IdentifierSymbolEntry(TypeSystem::voidType, "putf", identifiers->getLevel());
-    identifiers->install("putf", se7);
+    // 添加运行时库
+    // getint
+    Type *funcType;
+    funcType = new FunctionType(TypeSystem::intType, {});
+    SymbolEntry *se = new IdentifierSymbolEntry(funcType, "getint", identifiers->getLevel());
+    identifiers->install("getint", se);
+
+    // getch
+    funcType = new FunctionType(TypeSystem::intType, {});
+    se = new IdentifierSymbolEntry(funcType, "getch", identifiers->getLevel());
+    identifiers->install("getch", se);
+
+    // getarray
+    funcType = new FunctionType(TypeSystem::intType, {});
+    se = new IdentifierSymbolEntry(funcType, "getarray", identifiers->getLevel());
+    identifiers->install("getarray", se);
+
+    // putint
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "putint", identifiers->getLevel());
+    identifiers->install("putint", se);
+
+    // putch
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "putch", identifiers->getLevel());
+    identifiers->install("putch", se);
+
+    // putarray
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "putarray", identifiers->getLevel());
+    identifiers->install("putarray", se);
+
+    // putf
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "putf", identifiers->getLevel());
+    identifiers->install("putf", se);
+
+    // starttime
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "starttime", identifiers->getLevel());
+    identifiers->install("starttime", se);
+
+    // stoptime
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "stoptime", identifiers->getLevel());
+    identifiers->install("stoptime", se);
+    
     yyparse();
     if(dump_type == AST)
         ast.output();

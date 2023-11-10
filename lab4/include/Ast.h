@@ -253,6 +253,15 @@ public:
     void output(int level);
 };
 
+class ExprStmt : public StmtNode
+{
+private:
+    ExprNode* expr;
+public:
+    ExprStmt(ExprNode *expr) : expr(expr){};
+    void output(int level);
+};
+
 class Ast
 {
 private:
