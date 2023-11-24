@@ -34,10 +34,11 @@ public:
     std::vector<Instruction*>& falseList() {return false_list;}
 };
 
+// 表达式节点，存储的是等号左侧的符号表表项
 class ExprNode : public Node
 {
 protected:
-    SymbolEntry *symbolEntry;
+    SymbolEntry *symbolEntry; // 存储等号左侧的符号表信息
     Operand *dst;   // The result of the subtree is stored into dst.
 public:
     ExprNode(SymbolEntry *symbolEntry) : symbolEntry(symbolEntry){};
@@ -45,14 +46,28 @@ public:
     SymbolEntry* getSymPtr() {return symbolEntry;};
 };
 
+// 双目运算，等号右侧的表项
 class BinaryExpr : public ExprNode
 {
 private:
     int op;
     ExprNode *expr1, *expr2;
 public:
-    enum {ADD, SUB, AND, OR, LESS, GREATER};
+    enum {ADD, SUB, MUL, DIV, MOD, AND, OR, EQUAL, NOTEQUAL, LESS, GREATER, LESSEQUAL, GREATEREQUAL}; // 补充operator
     BinaryExpr(SymbolEntry *se, int op, ExprNode*expr1, ExprNode*expr2) : ExprNode(se), op(op), expr1(expr1), expr2(expr2){dst = new Operand(se);};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class UnaryExpr : public ExprNode
+{
+private:
+    int op;
+    ExprNode *expr;
+public:
+    enum {ADD, SUB, NOT};
+    UnaryExpr(SymbolEntry *se, int op, ExprNode*expr) : ExprNode(se), op(op), expr(expr){}; // 类双目的构造
     void output(int level);
     void typeCheck();
     void genCode();
@@ -60,8 +75,10 @@ public:
 
 class Constant : public ExprNode
 {
+private:
+    int scale; // 进制 0:decimal, 1:hex, 2:oct
 public:
-    Constant(SymbolEntry *se) : ExprNode(se){dst = new Operand(se);};
+    Constant(SymbolEntry *se, int scale=0) : ExprNode(se){dst = new Operand(se);};
     void output(int level);
     void typeCheck();
     void genCode();
@@ -76,15 +93,26 @@ public:
     void genCode();
 };
 
-class StmtNode : public Node
-{};
+/*函数调用*/
+class FuncCallExp : public ExprNode
+{
+private:
+    ExprNode* params;
+public:
+    FuncCallExp(SymbolEntry *se, ExprNode *params = nullptr) : ExprNode(se), params(params){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class StmtNode : public Node{};
 
 class CompoundStmt : public StmtNode
 {
 private:
     StmtNode *stmt;
 public:
-    CompoundStmt(StmtNode *stmt) : stmt(stmt) {};
+    CompoundStmt(StmtNode *stmt = nullptr) : stmt(stmt) {};
     void output(int level);
     void typeCheck();
     void genCode();
@@ -101,12 +129,96 @@ public:
     void genCode();
 };
 
-class DeclStmt : public StmtNode
+class VarDecl : public StmtNode
+{
+private:
+    StmtNode *prevdef;
+    StmtNode *def;
+public:
+    VarDecl(StmtNode *prevdef, StmtNode *def) : prevdef(prevdef), def(def){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class VarDef : public StmtNode
 {
 private:
     Id *id;
+    ExprNode *expr; // 为空表示只声明，不赋初值
 public:
-    DeclStmt(Id *id) : id(id){};
+    VarDef(Id *id, ExprNode *expr = nullptr) : id(id), expr(expr){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class ConstDecl : public StmtNode
+{
+private:
+    StmtNode *prevdef;
+    StmtNode *def;
+public:
+    ConstDecl(StmtNode *prevdef, StmtNode *def) : prevdef(prevdef), def(def){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class ConstDef : public StmtNode
+{
+private:
+    Id *id;
+    ExprNode *expr;
+public:
+    ConstDef(Id *id, ExprNode *expr) : id(id), expr(expr){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class FuncParam : public StmtNode
+{
+private:
+    Id *id;
+    ExprNode *expr;
+public:
+    FuncParam(Id *id, ExprNode *expr = nullptr) : id(id), expr(expr){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class FuncParams : public StmtNode
+{
+private:
+    StmtNode *prevparam;
+    StmtNode *param;
+public:
+    FuncParams(StmtNode *prevparam, StmtNode *param) : prevparam(prevparam), param(param){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class FuncRParam : public ExprNode
+{
+private:
+    ExprNode *param;
+public:
+    FuncRParam(SymbolEntry *se, ExprNode *param) : ExprNode(se), param(param){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class FuncRParams : public ExprNode
+{
+private:
+    ExprNode *prevparam;
+    ExprNode *param;
+public:
+    FuncRParams(SymbolEntry *se, ExprNode *prevparam, ExprNode *param) : ExprNode(se), prevparam(prevparam), param(param){};
     void output(int level);
     void typeCheck();
     void genCode();
@@ -137,12 +249,42 @@ public:
     void genCode();
 };
 
+class WhileStmt : public StmtNode
+{
+private:
+    ExprNode *cond;
+    StmtNode *stmt;
+public:
+    WhileStmt(ExprNode *cond, StmtNode *stmt) : cond(cond), stmt(stmt){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class BreakStmt : public StmtNode
+{
+public:
+    BreakStmt(){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class ContinueStmt : public StmtNode
+{
+public:
+    ContinueStmt(){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
 class ReturnStmt : public StmtNode
 {
 private:
     ExprNode *retValue;
 public:
-    ReturnStmt(ExprNode*retValue) : retValue(retValue) {};
+    ReturnStmt(ExprNode*retValue = nullptr) : retValue(retValue) {};
     void output(int level);
     void typeCheck();
     void genCode();
@@ -165,8 +307,29 @@ class FunctionDef : public StmtNode
 private:
     SymbolEntry *se;
     StmtNode *stmt;
+    StmtNode *params;
 public:
-    FunctionDef(SymbolEntry *se, StmtNode *stmt) : se(se), stmt(stmt){};
+    FunctionDef(SymbolEntry *se, StmtNode *stmt, StmtNode* params = nullptr) : se(se), stmt(stmt), params(params){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class EmptyStmt : public StmtNode
+{
+public:
+    EmptyStmt(){};
+    void output(int level);
+    void typeCheck();
+    void genCode();
+};
+
+class ExprStmt : public StmtNode
+{
+private:
+    ExprNode* expr;
+public:
+    ExprStmt(ExprNode *expr) : expr(expr){};
     void output(int level);
     void typeCheck();
     void genCode();

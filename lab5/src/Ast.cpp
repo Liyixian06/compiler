@@ -40,23 +40,6 @@ void Ast::genCode(Unit *unit)
     root->genCode();
 }
 
-void FunctionDef::genCode()
-{
-    Unit *unit = builder->getUnit();
-    Function *func = new Function(unit, se);
-    BasicBlock *entry = func->getEntry();
-    // set the insert point to the entry basicblock of this function.
-    builder->setInsertBB(entry);
-
-    stmt->genCode();
-
-    /**
-     * Construct control flow graph. You need do set successors and predecessors for each basic block.
-     * Todo
-    */
-   
-}
-
 void BinaryExpr::genCode()
 {
     BasicBlock *bb = builder->getInsertBB();
@@ -102,6 +85,11 @@ void BinaryExpr::genCode()
     }
 }
 
+void UnaryExpr::genCode()
+{
+
+}
+
 void Constant::genCode()
 {
     // we don't need to generate code.
@@ -114,30 +102,9 @@ void Id::genCode()
     new LoadInstruction(dst, addr, bb);
 }
 
-void IfStmt::genCode()
+void FuncCallExp::genCode()
 {
-    Function *func;
-    BasicBlock *then_bb, *end_bb;
-
-    func = builder->getInsertBB()->getParent();
-    then_bb = new BasicBlock(func);
-    end_bb = new BasicBlock(func);
-
-    cond->genCode();
-    backPatch(cond->trueList(), then_bb);
-    backPatch(cond->falseList(), end_bb);
-
-    builder->setInsertBB(then_bb);
-    thenStmt->genCode();
-    then_bb = builder->getInsertBB();
-    new UncondBrInstruction(end_bb, then_bb);
-
-    builder->setInsertBB(end_bb);
-}
-
-void IfElseStmt::genCode()
-{
-    // Todo
+    
 }
 
 void CompoundStmt::genCode()
@@ -150,6 +117,7 @@ void SeqNode::genCode()
     // Todo
 }
 
+/*
 void DeclStmt::genCode()
 {
     IdentifierSymbolEntry *se = dynamic_cast<IdentifierSymbolEntry *>(id->getSymPtr());
@@ -178,6 +146,88 @@ void DeclStmt::genCode()
         se->setAddr(addr);                                          // set the addr operand in symbol entry so that we can use it in subsequent code generation.
     }
 }
+*/
+
+void VarDecl::genCode()
+{
+
+}
+
+void VarDef::genCode()
+{
+    
+}
+
+void ConstDecl::genCode()
+{
+    
+}
+
+void ConstDef::genCode()
+{
+    
+}
+
+void FuncParam::genCode()
+{
+
+}
+
+void FuncParams::genCode()
+{
+    
+}
+
+void FuncRParam::genCode()
+{
+    
+}
+
+void FuncRParams::genCode()
+{
+    
+}
+
+void IfStmt::genCode()
+{
+    Function *func;
+    BasicBlock *then_bb, *end_bb;
+
+    func = builder->getInsertBB()->getParent();
+    then_bb = new BasicBlock(func);
+    end_bb = new BasicBlock(func);
+
+    cond->genCode();
+    backPatch(cond->trueList(), then_bb);
+    backPatch(cond->falseList(), end_bb);
+
+    builder->setInsertBB(then_bb);
+    thenStmt->genCode();
+    then_bb = builder->getInsertBB();
+    new UncondBrInstruction(end_bb, then_bb);
+
+    builder->setInsertBB(end_bb);
+}
+
+void IfElseStmt::genCode()
+{
+    // Todo
+}
+
+void WhileStmt::genCode()
+{
+
+}
+
+void BreakStmt::genCode()
+{
+    
+}
+
+void ContinueStmt::genCode()
+{
+    
+}
 
 void ReturnStmt::genCode()
 {
@@ -197,20 +247,47 @@ void AssignStmt::genCode()
     new StoreInstruction(addr, src, bb);
 }
 
+void FunctionDef::genCode()
+{
+    Unit *unit = builder->getUnit();
+    Function *func = new Function(unit, se);
+    BasicBlock *entry = func->getEntry();
+    // set the insert point to the entry basicblock of this function.
+    builder->setInsertBB(entry);
+
+    stmt->genCode();
+
+    /**
+     * Construct control flow graph. You need do set successors and predecessors for each basic block.
+     * Todo
+    */
+   
+}
+
+void EmptyStmt::genCode()
+{
+    
+}
+
+void ExprStmt::genCode()
+{
+    
+}
+
 void Ast::typeCheck()
 {
     if(root != nullptr)
         root->typeCheck();
 }
 
-void FunctionDef::typeCheck()
+void BinaryExpr::typeCheck()
 {
     // Todo
 }
 
-void BinaryExpr::typeCheck()
+void UnaryExpr::typeCheck()
 {
-    // Todo
+
 }
 
 void Constant::typeCheck()
@@ -223,14 +300,9 @@ void Id::typeCheck()
     // Todo
 }
 
-void IfStmt::typeCheck()
+void FuncCallExp::typeCheck()
 {
-    // Todo
-}
 
-void IfElseStmt::typeCheck()
-{
-    // Todo
 }
 
 void CompoundStmt::typeCheck()
@@ -243,9 +315,69 @@ void SeqNode::typeCheck()
     // Todo
 }
 
-void DeclStmt::typeCheck()
+void VarDecl::typeCheck()
+{
+
+}
+
+void VarDef::typeCheck()
+{
+    
+}
+
+void ConstDecl::typeCheck()
+{
+    
+}
+
+void ConstDef::typeCheck()
+{
+    
+}
+
+void FuncParam::typeCheck()
+{
+
+}
+
+void FuncParams::typeCheck()
+{
+    
+}
+
+void FuncRParam::typeCheck()
+{
+    
+}
+
+void FuncRParams::typeCheck()
+{
+    
+}
+
+void IfStmt::typeCheck()
 {
     // Todo
+}
+
+void IfElseStmt::typeCheck()
+{
+    // Todo
+}
+
+void WhileStmt::typeCheck()
+{
+    
+}
+
+void BreakStmt::typeCheck()
+{
+    
+}
+
+void ContinueStmt::typeCheck()
+{
+    
 }
 
 void ReturnStmt::typeCheck()
@@ -256,6 +388,28 @@ void ReturnStmt::typeCheck()
 void AssignStmt::typeCheck()
 {
     // Todo
+}
+
+void FunctionDef::typeCheck()
+{
+    // Todo
+}
+
+void EmptyStmt::typeCheck()
+{
+    // Todo
+}
+
+void ExprStmt::typeCheck()
+{
+    // Todo
+}
+
+void Ast::output()
+{
+    fprintf(yyout, "program\n");
+    if(root != nullptr)
+        root->output(4); // 4: 缩进
 }
 
 void BinaryExpr::output(int level)
@@ -269,14 +423,38 @@ void BinaryExpr::output(int level)
         case SUB:
             op_str = "sub";
             break;
+        case MUL:
+            op_str = "mul";
+            break;
+        case DIV:
+            op_str = "div";
+            break;
+        case MOD:
+            op_str = "mod";
+            break;
         case AND:
             op_str = "and";
             break;
         case OR:
             op_str = "or";
             break;
+        case EQUAL:
+            op_str = "equal";
+            break;
+        case NOTEQUAL:
+            op_str = "notequal";
+            break;
         case LESS:
             op_str = "less";
+            break;
+        case GREATER:
+            op_str = "greater";
+            break;
+        case LESSEQUAL:
+            op_str = "lessequal";
+            break;
+        case GREATEREQUAL:
+            op_str = "greaterequal";
             break;
     }
     fprintf(yyout, "%*cBinaryExpr\top: %s\n", level, ' ', op_str.c_str());
@@ -284,11 +462,24 @@ void BinaryExpr::output(int level)
     expr2->output(level + 4);
 }
 
-void Ast::output()
+/*单目运算*/
+void UnaryExpr::output(int level)
 {
-    fprintf(yyout, "program\n");
-    if(root != nullptr)
-        root->output(4);
+    std::string op_str;
+    switch(op)
+    {
+        case ADD:
+            op_str = "add";
+            break;
+        case SUB:
+            op_str = "sub";
+            break;
+        case NOT:
+            op_str = "not";
+            break;
+    }
+    fprintf(yyout, "%*cUnaryExpr\top: %s\n", level, ' ', op_str.c_str());
+    expr->output(level + 4);
 }
 
 void Constant::output(int level)
@@ -296,8 +487,22 @@ void Constant::output(int level)
     std::string type, value;
     type = symbolEntry->getType()->toStr();
     value = symbolEntry->toStr();
-    fprintf(yyout, "%*cIntegerLiteral\tvalue: %s\ttype: %s\n", level, ' ',
+    /*进制判断*/
+    switch (this->scale)
+    {
+        case 0:
+            fprintf(yyout, "%*cIntegerLiteral\tvalue: %s\ttype: %s\n", level, ' ',
             value.c_str(), type.c_str());
+            break;
+        case 1:
+            fprintf(yyout, "%*cHexLiteral\tvalue: %s\ttype: %s\n", level, ' ',
+            value.c_str(), type.c_str());
+            break;
+        case 2:
+            fprintf(yyout, "%*cOctLiteral\tvalue: %s\ttype: %s\n", level, ' ',
+            value.c_str(), type.c_str());
+            break;
+    }
 }
 
 void Id::output(int level)
@@ -311,22 +516,87 @@ void Id::output(int level)
             name.c_str(), scope, type.c_str());
 }
 
+/*函数调用表达式 函数名 作用域 类型*/
+void FuncCallExp::output(int level)
+{
+    std::string name, type;
+    int scope;
+    name = symbolEntry->toStr();
+    type = symbolEntry->getType()->toStr();
+    scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
+    fprintf(yyout, "%*cFunctionCall function name: %s, scope: %d, type: %s\n", level, ' ', 
+            name.c_str(), scope, type.c_str());
+    if(params) params->output(level + 4);
+}
+
 void CompoundStmt::output(int level)
 {
     fprintf(yyout, "%*cCompoundStmt\n", level, ' ');
-    stmt->output(level + 4);
+    if(stmt) stmt->output(level + 4);
 }
 
 void SeqNode::output(int level)
 {
-    stmt1->output(level);
-    stmt2->output(level);
+    fprintf(yyout, "%*cSequence\n", level, ' ');
+    stmt1->output(level + 4);
+    stmt2->output(level + 4);
 }
 
-void DeclStmt::output(int level)
+/*变量声明和定义*/
+void VarDecl::output(int level)
 {
-    fprintf(yyout, "%*cDeclStmt\n", level, ' ');
+    fprintf(yyout, "%*cVarDecl\n", level, ' ');
+    prevdef->output(level + 4);
+    def->output(level + 4);
+}
+
+void VarDef::output(int level)
+{
+    fprintf(yyout, "%*cVarDef\n", level, ' ');
     id->output(level + 4);
+    if(expr) expr->output(level + 4);
+}
+
+/*常量函数和定义*/
+void ConstDecl::output(int level)
+{
+    fprintf(yyout, "%*cConstDecl\n", level, ' ');
+    prevdef->output(level + 4);
+    def->output(level + 4);
+}
+
+void ConstDef::output(int level)
+{
+    fprintf(yyout, "%*cConstDef\n", level, ' ');
+    id->output(level + 4);
+    expr->output(level + 4);
+}
+
+void FuncParam::output(int level)
+{
+    fprintf(yyout, "%*cFuncParam\n", level, ' ');
+    id->output(level + 4);
+    if(expr) expr->output(level + 4);
+}
+
+void FuncParams::output(int level)
+{
+    fprintf(yyout, "%*cFuncParams:\n", level, ' ');
+    prevparam->output(level + 4);
+    param->output(level + 4);
+}
+
+void FuncRParam::output(int level)
+{
+    fprintf(yyout, "%*cFuncRealParam\n", level, ' ');
+    param->output(level + 4);
+}
+
+void FuncRParams::output(int level)
+{
+    fprintf(yyout, "%*cFuncRealParams:\n", level, ' ');
+    prevparam->output(level + 4);
+    param->output(level + 4);
 }
 
 void IfStmt::output(int level)
@@ -344,10 +614,27 @@ void IfElseStmt::output(int level)
     elseStmt->output(level + 4);
 }
 
+void WhileStmt::output(int level)
+{
+    fprintf(yyout, "%*cWhileStmt\n", level, ' ');
+    cond->output(level + 4);
+    stmt->output(level + 4);
+}
+
+void BreakStmt::output(int level)
+{
+    fprintf(yyout, "%*cBreakStmt\n", level, ' ');
+}
+
+void ContinueStmt::output(int level)
+{
+    fprintf(yyout, "%*cContinueStmt\n", level, ' ');
+}
+
 void ReturnStmt::output(int level)
 {
     fprintf(yyout, "%*cReturnStmt\n", level, ' ');
-    retValue->output(level + 4);
+    if(retValue) retValue->output(level + 4);
 }
 
 void AssignStmt::output(int level)
@@ -364,5 +651,16 @@ void FunctionDef::output(int level)
     type = se->getType()->toStr();
     fprintf(yyout, "%*cFunctionDefine function name: %s, type: %s\n", level, ' ', 
             name.c_str(), type.c_str());
+    if(params) params->output(level + 4);
     stmt->output(level + 4);
+}
+
+void EmptyStmt::output(int level)
+{
+    fprintf(yyout, "%*cEmptyStmt\n", level, ' ');
+}
+
+void ExprStmt::output(int level){
+    fprintf(yyout, "%*cExprStmt\n", level, ' ');
+    expr->output(level + 4);
 }

@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include "common.h"
 #include "Ast.h"
+#include "SymbolTable.h"
+#include "Type.h"
 #include "Unit.h"
 
 extern FILE *yyin;
@@ -54,6 +56,54 @@ int main(int argc, char *argv[])
         fprintf(stderr, "%s: fail to open output file\n", outfile);
         exit(EXIT_FAILURE);
     }
+
+    // 添加运行时库
+    // getint
+    Type *funcType;
+    funcType = new FunctionType(TypeSystem::intType, {});
+    SymbolEntry *se = new IdentifierSymbolEntry(funcType, "getint", identifiers->getLevel());
+    identifiers->install("getint", se);
+
+    // getch
+    funcType = new FunctionType(TypeSystem::intType, {});
+    se = new IdentifierSymbolEntry(funcType, "getch", identifiers->getLevel());
+    identifiers->install("getch", se);
+
+    // getarray
+    funcType = new FunctionType(TypeSystem::intType, {});
+    se = new IdentifierSymbolEntry(funcType, "getarray", identifiers->getLevel());
+    identifiers->install("getarray", se);
+
+    // putint
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "putint", identifiers->getLevel());
+    identifiers->install("putint", se);
+
+    // putch
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "putch", identifiers->getLevel());
+    identifiers->install("putch", se);
+
+    // putarray
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "putarray", identifiers->getLevel());
+    identifiers->install("putarray", se);
+
+    // putf
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "putf", identifiers->getLevel());
+    identifiers->install("putf", se);
+
+    // starttime
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "starttime", identifiers->getLevel());
+    identifiers->install("starttime", se);
+
+    // stoptime
+    funcType = new FunctionType(TypeSystem::voidType, {});
+    se = new IdentifierSymbolEntry(funcType, "stoptime", identifiers->getLevel());
+    identifiers->install("stoptime", se);
+
     yyparse();
     if(dump_type == AST)
         ast.output();

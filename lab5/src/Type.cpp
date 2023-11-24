@@ -4,10 +4,12 @@
 IntType TypeSystem::commonInt = IntType(32);
 IntType TypeSystem::commonBool = IntType(1);
 VoidType TypeSystem::commonVoid = VoidType();
+ConstType TypeSystem::commonConst = ConstType(4);
 
 Type* TypeSystem::intType = &commonInt;
 Type* TypeSystem::voidType = &commonVoid;
 Type* TypeSystem::boolType = &commonBool;
+Type* TypeSystem::constType = &commonConst;
 
 std::string IntType::toStr()
 {
@@ -19,6 +21,11 @@ std::string IntType::toStr()
 std::string VoidType::toStr()
 {
     return "void";
+}
+
+std::string ConstType::toStr()
+{
+    return "const";
 }
 
 std::string FunctionType::toStr()
