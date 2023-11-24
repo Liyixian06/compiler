@@ -15,7 +15,7 @@ void Ast::output()
 {
     fprintf(yyout, "program\n");
     if(root != nullptr)
-        root->output(4);
+        root->output(4); // 4: 缩进
 }
 
 void BinaryExpr::output(int level)
@@ -68,6 +68,7 @@ void BinaryExpr::output(int level)
     expr2->output(level + 4);
 }
 
+/*单目运算*/
 void UnaryExpr::output(int level)
 {
     std::string op_str;
@@ -92,6 +93,7 @@ void Constant::output(int level)
     std::string type, value;
     type = symbolEntry->getType()->toStr();
     value = symbolEntry->toStr();
+    /*进制判断*/
     switch (this->scale)
     {
         case 0:
@@ -120,6 +122,7 @@ void Id::output(int level)
             name.c_str(), scope, type.c_str());
 }
 
+/*函数调用表达式 函数名 作用域 类型*/
 void FuncCallExp::output(int level)
 {
     std::string name, type;
@@ -145,6 +148,7 @@ void SeqNode::output(int level)
     stmt2->output(level + 4);
 }
 
+/*变量声明和定义*/
 void VarDecl::output(int level)
 {
     fprintf(yyout, "%*cVarDecl\n", level, ' ');
@@ -159,6 +163,7 @@ void VarDef::output(int level)
     if(expr) expr->output(level + 4);
 }
 
+/*常量函数和定义*/
 void ConstDecl::output(int level)
 {
     fprintf(yyout, "%*cConstDecl\n", level, ' ');

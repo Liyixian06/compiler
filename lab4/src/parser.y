@@ -22,6 +22,7 @@
 }
 
 %start Program
+/*token增补 进制 运算符...*/
 %token <strtype> ID 
 %token <itype> INTEGER OCT HEX
 %token CONST
@@ -34,6 +35,7 @@
 %token EQUAL NOTEQUAL LESS GREATER LESSEQUAL GREATEREQUAL
 %token RETURN
 
+/*非终结符增补*/
 %nterm <stmttype> Stmts Stmt AssignStmt BlockStmt ExprStmt
 %nterm <stmttype> IfStmt WhileStmt BreakStmt ContinueStmt ReturnStmt EmptyStmt
 %nterm <stmttype> DeclStmt VarDecl ConstDecl VarDefList VarDef ConstDefList ConstDef
@@ -42,8 +44,10 @@
 %nterm <exprtype> ConstExp Cond FuncCall FuncRParams
 %nterm <type> Type
 
+/*优先级*/
 %precedence THEN
 %precedence ELSE
+
 %%
 Program
     : Stmts {
@@ -101,6 +105,7 @@ BlockStmt
         }
     | LBRACE RBRACE {$$ = new CompoundStmt();}
     ;
+/*表达式语句*/
 ExprStmt
     : Exp SEMICOLON {
         $$ = new ExprStmt($1);
@@ -131,9 +136,11 @@ ReturnStmt
     }
     | RETURN SEMICOLON {$$ = new ReturnStmt();}
     ;
+/*空语句 只含一个分号*/
 EmptyStmt
     :   SEMICOLON {$$ = new EmptyStmt();}
     ;
+/*变量和常量的规则归一*/
 DeclStmt
     :
     VarDecl {$$ = $1;}
@@ -141,6 +148,14 @@ DeclStmt
     ;
 FuncDef
     :
+    /*FunctionType函数的类型(返回类型。参数列表)*/
+    /*IdentifierSymbolEntry函数名在符号表中的条目，install到符号表中*/
+    /*在符号表中创建一个新的作用域，处理函数内部的变量和参数*/
+    /*lookup获取函数名在符号表中的条目，确保成功*/
+    /*创建 FunctionDef 对象，整个函数定义，包含函数名、返回类型、参数列表和函数体*/
+    /*清理符号表，回退到上一个作用域，删除内存*/
+    
+    /*无参定义*/
     Type ID LPAREN RPAREN BlockStmt
     {
         Type *funcType = new FunctionType($1,{});
@@ -155,6 +170,7 @@ FuncDef
         delete top;
         delete []$2;
     }
+    /*有参列表的函数定义 多了FuncParams*/
     | Type ID LPAREN FuncParams RPAREN BlockStmt
     {
         Type *funcType = new FunctionType($1,{});
@@ -163,6 +179,7 @@ FuncDef
         identifiers = new SymbolTable(identifiers);
         se = identifiers->lookup($2);
         assert(se != nullptr);
+        /*有参导致占位符不同*/
         $$ = new FunctionDef(se, $6, $4);
         SymbolTable *top = identifiers;
         identifiers = identifiers->getPrev();
@@ -178,6 +195,8 @@ ConstDecl
     :
     CONST Type ConstDefList SEMICOLON {$$ = $3;}
     ;
+/*列表的定义*/
+/*在存在多个变量定义时，创建一个新的变量声明节点，将其结果设置为新创建的节点 */
 VarDefList
     :
     VarDef {$$ = $1;}
