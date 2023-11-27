@@ -75,12 +75,12 @@ int main(int argc, char *argv[])
     identifiers->install("getarray", se);
 
     // putint
-    funcType = new FunctionType(TypeSystem::voidType, {});
+    funcType = new FunctionType(TypeSystem::voidType, {TypeSystem::intType});
     se = new IdentifierSymbolEntry(funcType, "putint", identifiers->getLevel());
     identifiers->install("putint", se);
 
     // putch
-    funcType = new FunctionType(TypeSystem::voidType, {});
+    funcType = new FunctionType(TypeSystem::voidType, {TypeSystem::intType});
     se = new IdentifierSymbolEntry(funcType, "putch", identifiers->getLevel());
     identifiers->install("putch", se);
 

@@ -2,6 +2,7 @@
 #define __TYPE_H__
 #include <vector>
 #include <string>
+#include "Operand.h"
 
 class Type
 {
@@ -53,6 +54,8 @@ public:
     FunctionType(Type* returnType, std::vector<Type*> paramsType) : 
     Type(Type::FUNC), returnType(returnType), paramsType(paramsType){};
     Type* getRetType() {return returnType;};
+    int getnum() {return paramsType.size();}
+    std::vector<Type*> get_params() {return paramsType;}
     std::string toStr();
 };
 
@@ -77,6 +80,54 @@ public:
     static Type *voidType;
     static Type *boolType;
     static Type *constType;
+};
+
+class FuncDefPara // 函数定义参数个数
+{
+private:
+    int num;
+public:
+    FuncDefPara(){num = 0;}
+    void plus(){num++;}
+    void reset(){num = 0;}
+    int ret_num(){return num;}
+};
+static FuncDefPara funcdefpara;
+
+class FuncParaType
+{
+private:
+    std::vector<Type*> paramsType;
+public:
+    FuncParaType(){paramsType = {};}
+    void push(Type* p) {paramsType.push_back(p);}
+    std::vector<Type*> get() {return paramsType;}
+    void reset() {paramsType.clear();}
+};
+static FuncParaType defpara;
+static FuncParaType callpara;
+
+class FuncCallPara
+{
+private:
+    int num;
+public:
+    FuncCallPara(){num = 0;}
+    void plus(){num++;}
+    void reset(){num = 0;}
+    int ret_num(){return num;}
+};
+static FuncCallPara funccallpara;
+
+class FuncCallParaType
+{
+private:
+    std::vector<Operand*> paralist;
+public:
+    FuncCallParaType(){paralist={};}
+    void push(Operand* p) {paralist.push_back(p);}
+    std::vector<Operand*> get() {return paralist;}
+    void reset() {paralist.clear();}
 };
 
 #endif

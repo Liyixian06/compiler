@@ -127,10 +127,10 @@ void FuncCallExp::output(int level)
 {
     std::string name, type;
     int scope;
-    name = symbolEntry->toStr();
-    type = symbolEntry->getType()->toStr();
-    scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
-    fprintf(yyout, "%*cFunctionCall function name: %s, scope: %d, type: %s\n", level, ' ', 
+    name = st->toStr();
+    type = st->getType()->toStr();
+    scope = dynamic_cast<IdentifierSymbolEntry*>(st)->getScope();
+    fprintf(yyout, "%*cFunctionCall function name: %s, scope: %d, return type: %s\n", level, ' ', 
             name.c_str(), scope, type.c_str());
     if(params) params->output(level + 4);
 }

@@ -178,11 +178,6 @@ void FuncParams::genCode()
     
 }
 
-void FuncRParam::genCode()
-{
-    
-}
-
 void FuncRParams::genCode()
 {
     
@@ -282,134 +277,293 @@ void Ast::typeCheck()
 
 void BinaryExpr::typeCheck()
 {
-    // Todo
+    expr1->typeCheck();
+    expr2->typeCheck();
+    Type* type1 = expr1->getSymPtr()->getType();
+    Type* type2 = expr2->getSymPtr()->getType();
+    if(type1->isVoid() || type2->isVoid()){
+        fprintf(stderr, "type %s in binaryexpr is void\n", type1->toStr().c_str());
+        exit(EXIT_FAILURE);
+    }
+    if(type1 != type2){
+        if(!(
+        (type1->toStr()=="i32" && type2->toStr()=="const") // int 和 const
+        || (type1->toStr()=="const" && type2->toStr()=="i32")
+        || (type1->toStr()=="i1" && type2->toStr()=="const") // bool 和 const
+        || (type1->toStr()=="const" && type2->toStr()=="i1")
+        || (type1->toStr()=="i1" && type2->toStr()=="i32") // bool 和 int
+        || (type1->toStr()=="i32" && type2->toStr()=="i1")
+        || (type1->toStr()=="i32()" && type2->toStr()=="i32") // 返回值为int的函数和 int
+        || (type1->toStr()=="i32" && type2->toStr()=="i32()")
+        || (type1->toStr()=="i32()" && type2->toStr()=="i1") // 返回值为int的函数和 bool
+        || (type1->toStr()=="i1" && type2->toStr()=="i32()")
+        )   
+        ){
+            fprintf(stderr, "type %s and %s mismatch in binaryexpr\n", 
+                type1->toStr().c_str(), type2->toStr().c_str());
+            exit(EXIT_FAILURE);
+        }
+    }
+    symbolEntry->setType(type1);
 }
 
 void UnaryExpr::typeCheck()
 {
-
+    expr->typeCheck();
+    Type* type1 = expr->getSymPtr()->getType();
+    symbolEntry->setType(type1);
 }
 
-void Constant::typeCheck()
+void Constant::typeCheck() // 判断是否为const类型
 {
-    // Todo
+    if(symbolEntry->getType()!=TypeSystem::constType){
+        fprintf(stderr, "const type error\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
-void Id::typeCheck()
+void Id::typeCheck() 
 {
-    // Todo
+    // 检查未定义和同一作用域下的重定义
 }
 
 void FuncCallExp::typeCheck()
 {
-
+    // 检查是否未定义
+    Type* type = st->getType();
+    FunctionType* tmp = static_cast<FunctionType*>(type);
+    symbolEntry->setType(tmp->getRetType());
 }
 
 void CompoundStmt::typeCheck()
 {
-    // Todo
+    if(stmt) stmt->typeCheck();
 }
 
 void SeqNode::typeCheck()
 {
-    // Todo
+    stmt1->typeCheck();
+    if(stmt2) stmt2->typeCheck();
 }
 
 void VarDecl::typeCheck()
 {
-
+    prevdef->typeCheck();
+    def->typeCheck();
 }
 
 void VarDef::typeCheck()
 {
-    
+    Type* type1 = id->getSymPtr()->getType();
+    if(type1->isInt()!=1){
+        fprintf(stderr, "vardef id type %s error\n", type1->toStr().c_str());
+        exit(EXIT_FAILURE);
+    }
+    if(expr){
+        expr->typeCheck();
+        Type* type2 = expr->getSymPtr()->getType();
+        if((type2->isConst()||type2->isInt())!=1){
+            fprintf(stderr, "vardef expr type %s error\n", type2->toStr().c_str());
+            exit(EXIT_FAILURE);
+        }
+    }
 }
 
 void ConstDecl::typeCheck()
 {
-    
+    prevdef->typeCheck();
+    def->typeCheck();
 }
 
 void ConstDef::typeCheck()
 {
-    
+    Type* type1 = id->getSymPtr()->getType();
+    if(type1->isConst()!=1){
+        fprintf(stderr, "constdef id type %s error\n", type1->toStr().c_str());
+        exit(EXIT_FAILURE);
+    }
+    if(expr){
+        expr->typeCheck();
+        Type* type2 = expr->getSymPtr()->getType();
+        if((type2->isConst()||type2->isInt())!=1){
+            fprintf(stderr, "constdef expr type %s error\n", type2->toStr().c_str());
+            exit(EXIT_FAILURE);
+        }
+    }
 }
 
 void FuncParam::typeCheck()
 {
-
+    Type* type1 = id->getSymPtr()->getType();
+    if(type1->isInt()!=1){
+        fprintf(stderr, "funcparam id type %s error\n", type1->toStr().c_str());
+        exit(EXIT_FAILURE);
+    }
+    if(expr){
+        expr->typeCheck();
+        Type* type2 = expr->getSymPtr()->getType();
+        if((type2->isConst()||type2->isInt())!=1){
+            fprintf(stderr, "funcparam expr type %s error\n", type2->toStr().c_str());
+            exit(EXIT_FAILURE);
+        }
+    }
 }
 
 void FuncParams::typeCheck()
 {
-    
+    // 将实参个数和类型插入函数类型中
+    prevparam->typeCheck();
+    if(param) param->typeCheck();
 }
 
+/*
 void FuncRParam::typeCheck()
 {
-    
-}
+    param->typeCheck();
+    Type* type = param->getSymPtr()->getType();
+    if((type->isConst()||type->isInt())!=1){
+        fprintf(stderr, "funcrealparam expr type %s error\n", type->toStr().c_str());
+        exit(EXIT_FAILURE);
+    }
+    symbolEntry->setType(type);
+}*/
 
 void FuncRParams::typeCheck()
 {
-    
+    // 检查实参个数和类型是否与形参一致
+    prevparam->typeCheck();
+    if(param) param->typeCheck();
 }
 
-void IfStmt::typeCheck()
+void IfStmt::typeCheck() // 把 cond 的类型设为 bool
 {
-    // Todo
+    cond->typeCheck();
+    if(cond->getSymPtr()->getType()->isInt()==1 || cond->getSymPtr()->getType()->isConst()==1)
+        cond->getSymPtr()->setType(TypeSystem::boolType);
+    else {
+        fprintf(stderr, "ifstmt cond type error\n");
+        exit(EXIT_FAILURE);
+    }
+    thenStmt->typeCheck();
 }
 
 void IfElseStmt::typeCheck()
 {
-    // Todo
+    cond->typeCheck();
+    if(cond->getSymPtr()->getType()->isInt()==1 || cond->getSymPtr()->getType()->isConst()==1)
+        cond->getSymPtr()->setType(TypeSystem::boolType);
+    else {
+        fprintf(stderr, "ifelsestmt cond type error\n");
+        exit(EXIT_FAILURE);
+    }
+    thenStmt->typeCheck();
+    elseStmt->typeCheck();
 }
 
 void WhileStmt::typeCheck()
 {
-    
+    cond->typeCheck();
+    if(cond->getSymPtr()->getType()->isInt()==1 || cond->getSymPtr()->getType()->isConst()==1)
+        cond->getSymPtr()->setType(TypeSystem::boolType);
+    else{
+        fprintf(stderr, "whilestmt cond type error\n");
+        exit(EXIT_FAILURE);
+    }
+    stmt->typeCheck();
 }
 
 void BreakStmt::typeCheck()
 {
-    
+    // 检查是否仅出现在 while 中
 }
 
 void ContinueStmt::typeCheck()
 {
-    
+    // 检查是否仅出现在 while 中
 }
 
-void ReturnStmt::typeCheck()
+void ReturnStmt::typeCheck() 
 {
-    // Todo
+    // 检查返回值是否和声明的类型一致
+    if(retValue){
+        retValue->typeCheck();
+        Type* ret_type = retValue->getSymPtr()->getType();
+        SymbolEntry* se = identifiers->search_func();
+        std::string name = dynamic_cast<IdentifierSymbolEntry*>(se)->get_name();
+        FunctionType* type = static_cast<FunctionType*>(se->getType());
+        if(ret_type->isVoid()!=1 && (type->getRetType())->isVoid())
+        {
+            fprintf(stderr, "func %s ret type error\n", name.c_str());
+        }
+    }
+    else{
+        SymbolEntry* se = identifiers->search_func();
+        std::string name = dynamic_cast<IdentifierSymbolEntry*>(se)->get_name();
+        FunctionType* type = static_cast<FunctionType*>(se->getType());
+        if((type->getRetType())->isVoid()!=1){
+            fprintf(stderr, "func %s ret type error: missing return value\n", name.c_str());
+        }
+    }
 }
 
 void AssignStmt::typeCheck()
 {
-    // Todo
+    lval->typeCheck();
+    expr->typeCheck();
+    Type* type1 = lval->getSymPtr()->getType();
+    Type* type2 = expr->getSymPtr()->getType();
+    if(type1->isVoid() || type2->isVoid()){
+        fprintf(stderr, "type %s in assignstmt is void\n", type1->toStr().c_str());
+        exit(EXIT_FAILURE);
+    }
+    if(type1 != type2){
+        if(!(
+        (type1->toStr()=="i32" && type2->toStr()=="const") // int 和 const
+        || (type1->toStr()=="const" && type2->toStr()=="i32")
+        || (type1->toStr()=="i1" && type2->toStr()=="const") // bool 和 const
+        || (type1->toStr()=="const" && type2->toStr()=="i1")
+        || (type1->toStr()=="i1" && type2->toStr()=="i32") // bool 和 int
+        || (type1->toStr()=="i32" && type2->toStr()=="i1")
+        || (type1->toStr()=="i32()" && type2->toStr()=="i32") // 返回值为int的函数和 int
+        || (type1->toStr()=="i32" && type2->toStr()=="i32()")
+        || (type1->toStr()=="i32()" && type2->toStr()=="i1") // 返回值为int的函数和 bool
+        || (type1->toStr()=="i1" && type2->toStr()=="i32()")
+        )   
+        ){
+            fprintf(stderr, "type %s and %s mismatch in assignstmt\n", 
+                type1->toStr().c_str(), type2->toStr().c_str());
+            exit(EXIT_FAILURE);
+        }
+    }
 }
 
 void FunctionDef::typeCheck()
 {
-    // Todo
+    // 检查不符合重载要求的重定义
+    if(se->getType()->isFunc()!=1){
+        fprintf(stderr, "funcdef type error\n");
+        exit(EXIT_FAILURE);
+    }
+    if(params) params->typeCheck();
+    stmt->typeCheck();
+    FunctionType* type = static_cast<FunctionType*>(se->getType());
+    if((type->getRetType())->isInt()){
+        
+    }
 }
 
-void EmptyStmt::typeCheck()
-{
-    // Todo
-}
+void EmptyStmt::typeCheck(){}
 
 void ExprStmt::typeCheck()
 {
-    // Todo
+    expr->typeCheck();
 }
 
 void Ast::output()
 {
     fprintf(yyout, "program\n");
     if(root != nullptr)
-        root->output(4); // 4: 缩进
+        root->output(4); 
 }
 
 void BinaryExpr::output(int level)
@@ -521,10 +675,10 @@ void FuncCallExp::output(int level)
 {
     std::string name, type;
     int scope;
-    name = symbolEntry->toStr();
-    type = symbolEntry->getType()->toStr();
-    scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
-    fprintf(yyout, "%*cFunctionCall function name: %s, scope: %d, type: %s\n", level, ' ', 
+    name = st->toStr();
+    type = st->getType()->toStr();
+    scope = dynamic_cast<IdentifierSymbolEntry*>(st)->getScope();
+    fprintf(yyout, "%*cFunctionCall function name: %s, scope: %d, return type: %s\n", level, ' ', 
             name.c_str(), scope, type.c_str());
     if(params) params->output(level + 4);
 }
@@ -583,20 +737,14 @@ void FuncParams::output(int level)
 {
     fprintf(yyout, "%*cFuncParams:\n", level, ' ');
     prevparam->output(level + 4);
-    param->output(level + 4);
-}
-
-void FuncRParam::output(int level)
-{
-    fprintf(yyout, "%*cFuncRealParam\n", level, ' ');
-    param->output(level + 4);
+    if(param) param->output(level + 4);
 }
 
 void FuncRParams::output(int level)
 {
     fprintf(yyout, "%*cFuncRealParams:\n", level, ' ');
     prevparam->output(level + 4);
-    param->output(level + 4);
+    if(param) param->output(level + 4);
 }
 
 void IfStmt::output(int level)

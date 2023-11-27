@@ -5,3 +5,4 @@
 - lab3 - lexer
 - OT1 - regex2NFA
 - lab4 - parser
+- lab5 - typecheck, LLVM code

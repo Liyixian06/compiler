@@ -77,7 +77,7 @@ LVal // 左值
     : ID {
         SymbolEntry *se;
         se = identifiers->lookup($1);
-        if(se == nullptr)
+        if(se == nullptr) // 使用/赋值时，变量是否未定义
         {
             fprintf(stderr, "identifier \"%s\" is undefined\n", (char*)$1);
             delete [](char*)$1;
@@ -94,10 +94,10 @@ AssignStmt
     }
     ;
 BlockStmt
-    :   LBRACE 
+    :   LBRACE // 作用域开始，定义当前作用域符号表
         {identifiers = new SymbolTable(identifiers);} 
         Stmts RBRACE 
-        {
+        {   // 作用域结束，当前符号表删除，指针前移
             $$ = new CompoundStmt($3);
             SymbolTable *top = identifiers;
             identifiers = identifiers->getPrev();
@@ -171,16 +171,22 @@ FuncDef
         delete []$2;
     }
     /*有参列表的函数定义 多了FuncParams*/
-    | Type ID LPAREN FuncParams RPAREN BlockStmt
+    |
+    Type ID LPAREN
     {
-        Type *funcType = new FunctionType($1,{});
-        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
-        identifiers->install($2, se);
         identifiers = new SymbolTable(identifiers);
+        funcdefpara.reset();
+        defpara.reset();
+    }
+    FuncParams RPAREN BlockStmt
+    {
+        Type *funcType = new FunctionType($1, defpara.get()); // 添加参数
+        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
+        identifiers->getPrev()->install($2, se);
         se = identifiers->lookup($2);
         assert(se != nullptr);
         /*有参导致占位符不同*/
-        $$ = new FunctionDef(se, $6, $4);
+        $$ = new FunctionDef(se, $7, $5);
         SymbolTable *top = identifiers;
         identifiers = identifiers->getPrev();
         delete top;
@@ -209,13 +215,26 @@ ConstDefList
     ;
 VarDef
     : ID {
-        SymbolEntry *se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
+        // 是否有同一作用域下的重定义
+        SymbolEntry *se = identifiers->lookup_inthis($1);
+        if(se){
+            fprintf(stderr, "var \"%s\" is redefined\n", (char*)$1);
+            delete [](char*)$1;
+            assert(se!=nullptr);
+        }
+        se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
         identifiers->install($1, se);
         $$ = new VarDef(new Id(se));
         delete []$1;
     }
     | ID ASSIGN Exp {
-        SymbolEntry *se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
+        SymbolEntry *se = identifiers->lookup_inthis($1);
+        if(se){
+            fprintf(stderr, "var \"%s\" is redefined\n", (char*)$1);
+            delete [](char*)$1;
+            assert(se!=nullptr);
+        }
+        se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
         identifiers->install($1, se);
         $$ = new VarDef(new Id(se), $3);
         delete []$1;
@@ -223,7 +242,14 @@ VarDef
     ;
 ConstDef
     : ID ASSIGN ConstExp {
-        SymbolEntry *se = new IdentifierSymbolEntry(TypeSystem::constType, $1, identifiers->getLevel());
+        // 是否有同一作用域下的重定义
+        SymbolEntry *se = identifiers->lookup_inthis($1);
+        if(se){
+            fprintf(stderr, "const \"%s\" is redefined\n", (char*)$1);
+            delete [](char*)$1;
+            assert(se!=nullptr);
+        }
+        se = new IdentifierSymbolEntry(TypeSystem::constType, $1, identifiers->getLevel());
         identifiers->install($1, se);
         $$ = new ConstDef(new Id(se), $3);
         delete []$1;
@@ -240,15 +266,15 @@ PrimaryExp
         $$ = $1;
     }
     | INTEGER {
-        SymbolEntry *se = new ConstantSymbolEntry(TypeSystem::intType, $1);
+        SymbolEntry *se = new ConstantSymbolEntry(TypeSystem::constType, $1);
         $$ = new Constant(se,0);
     }
     | OCT {
-        SymbolEntry *se = new ConstantSymbolEntry(TypeSystem::intType, $1);
+        SymbolEntry *se = new ConstantSymbolEntry(TypeSystem::constType, $1);
         $$ = new Constant(se,2);
     }
     | HEX {
-        SymbolEntry *se = new ConstantSymbolEntry(TypeSystem::intType, $1);
+        SymbolEntry *se = new ConstantSymbolEntry(TypeSystem::constType, $1);
         $$ = new Constant(se,1);
     }
     | LPAREN Exp RPAREN {$$ = $2;}
@@ -365,43 +391,99 @@ Cond
     LOrExp {$$ = $1;}
     ;
 FuncCall
-    :
+    : // 函数调用时是否未定义
     ID LPAREN RPAREN { // main()
-        SymbolEntry *se = identifiers->lookup($1);
-        if(se == nullptr){
+        SymbolEntry *st = identifiers->lookup($1);
+        if(st == nullptr){
             fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
             delete []$1;
-            assert(se!=nullptr);
+            assert(st!=nullptr);
         }
-        $$ = new FuncCallExp(se);
+        Type* tmp = st->getType();
+        FunctionType* type = static_cast<FunctionType*>(tmp);
+        int para_num = type->getnum(); // 定义时的参数个数
+        if(para_num!=0){
+            fprintf(stderr, "funccall %s params num error\n", (char*)$1);
+            assert(para_num == 0);
+        }
+        SymbolEntry *se = new TemporarySymbolEntry(type->getRetType(), SymbolTable::getLabel());
+        $$ = new FuncCallExp(se, st);
     }
-    | ID LPAREN FuncRParams RPAREN { //add(a,b)
-        SymbolEntry *se = identifiers->lookup($1);
-        if(se == nullptr){
+    | ID LPAREN {
+        funccallpara.reset();
+        callpara.reset();
+    }
+    FuncRParams RPAREN { //add(a,b)
+    if($1!=(char*)"putf"){
+        SymbolEntry *st = identifiers->lookup($1);
+        if(st == nullptr){
             fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
             delete []$1;
-            assert(se!=nullptr);
+            assert(st!=nullptr);
         }
-        $$ = new FuncCallExp(se, $3);
+        std::string name = dynamic_cast<IdentifierSymbolEntry*>(st)->get_name();
+        Type* tmp = st->getType();
+        FunctionType* type = static_cast<FunctionType*>(tmp);
+        int para_num = type->getnum(); // 定义时的参数个数
+        std::vector<Type*> para_type = type->get_params(); // 形参类型
+        int call_num = funccallpara.ret_num(); // 调用时的参数个数
+        std::vector<Type*> call_type = callpara.get(); // 实参类型
+        if(para_num != call_num){
+            fprintf(stderr, "funccall %s params num error\n", (char*)$1);
+            assert(para_num == call_num);
+        }
+        else if(name!="putint" && name!="putch" && name!="getint" && name!="getch"){
+            for(int i=0; i<para_num; i++){
+                if(para_type[i]->isVoid() || call_type[i]->isVoid()){
+                    fprintf(stderr, "funccall %s params type error\n", (char*)$1);
+                    assert(para_type[i] == call_type[i]);
+                }
+            }
+        }
+        SymbolEntry *se = new TemporarySymbolEntry(type->getRetType(), SymbolTable::getLabel());
+        $$ = new FuncCallExp(se, st, $4);
+    }
     }
     ;
 FuncParam
     :
     Type ID {
-        SymbolEntry *se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        SymbolEntry* se = identifiers->lookup_inthis($2);
+        if(se!=nullptr){
+            fprintf(stderr, "param \"%s\" is redefined\n", (char*)$2);
+            delete [](char*)$2;
+            assert(se==nullptr);
+        }
+        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
         identifiers->install($2, se);
         $$ = new FuncParam(new Id(se));
     }
     | Type ID ASSIGN Exp {
-        SymbolEntry *se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        SymbolEntry* se = identifiers->lookup_inthis($2);
+        if(se!=nullptr){
+            fprintf(stderr, "param \"%s\" is redefined\n", (char*)$2);
+            delete [](char*)$2;
+            assert(se==nullptr);
+        }
+        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
         identifiers->install($2, se);
         $$ = new FuncParam(new Id(se), $4);
     }
     ;
 FuncParams
     :
-    FuncParam {$$ = $1;}
+    FuncParam {
+        funcdefpara.plus();
+        FuncParam* tmp = static_cast<FuncParam*>($1);
+        Type* type = tmp->get_id()->getSymPtr()->getType();
+        defpara.push(type);
+        $$ = new FuncParams($1);
+    }
     | FuncParams COMMA FuncParam {
+        funcdefpara.plus();
+        FuncParam* tmp = static_cast<FuncParam*>($3);
+        Type* type = tmp->get_id()->getSymPtr()->getType();
+        defpara.push(type);
         $$ = new FuncParams($1, $3);
     }
     ;
@@ -409,10 +491,14 @@ FuncRParams
     :
     Exp {
         SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, identifiers->getLabel());
-        $$ = new FuncRParam(se, $1);
+        funccallpara.plus();
+        callpara.push(TypeSystem::intType);
+        $$ = new FuncRParams(se, $1);
     }
     | FuncRParams COMMA Exp {
         SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, identifiers->getLabel());
+        funccallpara.plus();
+        callpara.push(TypeSystem::intType);
         $$ = new FuncRParams(se, $1, $3);
     }
     ;

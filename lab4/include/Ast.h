@@ -69,9 +69,10 @@ public:
 class FuncCallExp : public ExprNode
 {
 private:
+    SymbolEntry* st;
     ExprNode* params; // 参数
 public:
-    FuncCallExp(SymbolEntry *se, ExprNode *params = nullptr) : ExprNode(se), params(params){};
+    FuncCallExp(SymbolEntry *se, SymbolEntry* st, ExprNode *params = nullptr) : ExprNode(se), st(st), params(params){};
     void output(int level);
 };
 

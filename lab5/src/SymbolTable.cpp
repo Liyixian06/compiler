@@ -1,4 +1,5 @@
 #include "SymbolTable.h"
+#include "Type.h"
 #include <iostream>
 #include <sstream>
 
@@ -78,6 +79,40 @@ SymbolEntry* SymbolTable::lookup(std::string name)
     }
     if(it != p->symbolTable.end()) return it->second;
     else return nullptr;
+}
+
+SymbolEntry* SymbolTable::lookup_inthis(std::string name)
+{
+    SymbolTable* p = this;
+    if(p->symbolTable.count(name)!=0)
+        return p->symbolTable[name];
+    return nullptr;
+}
+
+SymbolEntry* SymbolTable::search_func() // 查找最近函数的符号表项
+{
+    SymbolTable* p = this;
+    std::map<std::string, SymbolEntry*>::iterator it;
+    while(p->prev){
+        it = p->symbolTable.begin();
+        while(it!=p->symbolTable.end()){
+            SymbolEntry* se = it->second;
+            if(se->getType()->isFunc()==1){
+                return se;
+            }
+            it++;
+        }
+        p = p->getPrev();
+    }
+    it = p->symbolTable.begin();
+    while(it!=p->symbolTable.end()){
+        SymbolEntry* se = it->second;
+        if(se->getType()->isFunc()==1){
+            return se;
+        }
+        it++;
+    }
+    return nullptr;
 }
 
 // install the entry into current symbol table.

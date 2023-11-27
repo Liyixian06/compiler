@@ -367,22 +367,24 @@ Cond
 FuncCall
     :
     ID LPAREN RPAREN { // main()
-        SymbolEntry *se = identifiers->lookup($1);
-        if(se == nullptr){
+        SymbolEntry *st = identifiers->lookup($1);
+        if(st == nullptr){
             fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
             delete []$1;
-            assert(se!=nullptr);
+            assert(st!=nullptr);
         }
-        $$ = new FuncCallExp(se);
+        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new FuncCallExp(se, st);
     }
     | ID LPAREN FuncRParams RPAREN { //add(a,b)
-        SymbolEntry *se = identifiers->lookup($1);
-        if(se == nullptr){
+        SymbolEntry *st = identifiers->lookup($1);
+        if(st == nullptr){
             fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
             delete []$1;
-            assert(se!=nullptr);
+            assert(st!=nullptr);
         }
-        $$ = new FuncCallExp(se, $3);
+        SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new FuncCallExp(se, st, $3);
     }
     ;
 FuncParam

@@ -97,9 +97,10 @@ public:
 class FuncCallExp : public ExprNode
 {
 private:
+    SymbolEntry* st;
     ExprNode* params;
 public:
-    FuncCallExp(SymbolEntry *se, ExprNode *params = nullptr) : ExprNode(se), params(params){};
+    FuncCallExp(SymbolEntry *se, SymbolEntry* st, ExprNode *params = nullptr) : ExprNode(se), st(st), params(params){};
     void output(int level);
     void typeCheck();
     void genCode();
@@ -123,7 +124,7 @@ class SeqNode : public StmtNode
 private:
     StmtNode *stmt1, *stmt2;
 public:
-    SeqNode(StmtNode *stmt1, StmtNode *stmt2) : stmt1(stmt1), stmt2(stmt2){};
+    SeqNode(StmtNode *stmt1, StmtNode *stmt2 = nullptr) : stmt1(stmt1), stmt2(stmt2){};
     void output(int level);
     void typeCheck();
     void genCode();
@@ -187,6 +188,7 @@ public:
     void output(int level);
     void typeCheck();
     void genCode();
+    Id* get_id(){return id;}
 };
 
 class FuncParams : public StmtNode
@@ -195,18 +197,7 @@ private:
     StmtNode *prevparam;
     StmtNode *param;
 public:
-    FuncParams(StmtNode *prevparam, StmtNode *param) : prevparam(prevparam), param(param){};
-    void output(int level);
-    void typeCheck();
-    void genCode();
-};
-
-class FuncRParam : public ExprNode
-{
-private:
-    ExprNode *param;
-public:
-    FuncRParam(SymbolEntry *se, ExprNode *param) : ExprNode(se), param(param){};
+    FuncParams(StmtNode *prevparam, StmtNode *param = nullptr) : prevparam(prevparam), param(param){};
     void output(int level);
     void typeCheck();
     void genCode();
@@ -218,7 +209,7 @@ private:
     ExprNode *prevparam;
     ExprNode *param;
 public:
-    FuncRParams(SymbolEntry *se, ExprNode *prevparam, ExprNode *param) : ExprNode(se), prevparam(prevparam), param(param){};
+    FuncRParams(SymbolEntry *se, ExprNode *prevparam, ExprNode *param = nullptr) : ExprNode(se), prevparam(prevparam), param(param){};
     void output(int level);
     void typeCheck();
     void genCode();
