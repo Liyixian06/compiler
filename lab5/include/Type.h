@@ -129,5 +129,6 @@ public:
     std::vector<Operand*> get() {return paralist;}
     void reset() {paralist.clear();}
 };
+static FuncCallParaType callparamstype;
 
 #endif

@@ -11,6 +11,8 @@
 
 class Unit;
 
+// 当前要处理的程序片段，可能对应多个 basic block
+// block 之间存在跳转关系
 class Function
 {
     typedef std::vector<BasicBlock *>::iterator iterator;
@@ -18,9 +20,10 @@ class Function
 
 private:
     std::vector<BasicBlock *> block_list;
-    SymbolEntry *sym_ptr;
-    BasicBlock *entry;
-    Unit *parent;
+    SymbolEntry *sym_ptr; // 存放函数的名称、返回类型
+    BasicBlock *entry; // 第一个块
+    Unit *parent; // 函数处于的Unit
+    std::vector<Operand*> params; // 函数的参数类型
 
 public:
     Function(Unit *, SymbolEntry *);
@@ -35,6 +38,7 @@ public:
     reverse_iterator rbegin() { return block_list.rbegin(); };
     reverse_iterator rend() { return block_list.rend(); };
     SymbolEntry *getSymPtr() { return sym_ptr; };
+    void push_para(Operand* p) {params.push_back(p); };
 };
 
 #endif

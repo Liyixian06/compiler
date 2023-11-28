@@ -58,15 +58,15 @@ BinaryInstruction::BinaryInstruction(unsigned opcode, Operand *dst, Operand *src
     operands.push_back(dst);
     operands.push_back(src1);
     operands.push_back(src2);
-    dst->setDef(this);
-    src1->addUse(this);
+    dst->setDef(this); // 指令定义了dst
+    src1->addUse(this); // 指令使用了src
     src2->addUse(this);
 }
 
 BinaryInstruction::~BinaryInstruction()
 {
-    operands[0]->setDef(nullptr);
-    if(operands[0]->usersNum() == 0)
+    operands[0]->setDef(nullptr); // 重置dst的定义
+    if(operands[0]->usersNum() == 0) // 如果没有指令使用了，就释放
         delete operands[0];
     operands[1]->removeUse(this);
     operands[2]->removeUse(this);
@@ -79,6 +79,8 @@ void BinaryInstruction::output() const
     s2 = operands[1]->toStr();
     s3 = operands[2]->toStr();
     type = operands[0]->getType()->toStr();
+    if(type=="const") type = "i32";
+    if(type=="const*") type = "i32*";
     switch (opcode)
     {
     case ADD:
@@ -87,10 +89,64 @@ void BinaryInstruction::output() const
     case SUB:
         op = "sub";
         break;
+    case MUL:
+        op = "mul";
+        break;
+    case DIV:
+        op = "sdiv";
+        break;
+    case MOD:
+        op = "srem";
+        break;
     default:
         break;
     }
     fprintf(yyout, "  %s = %s %s %s, %s\n", s1.c_str(), op.c_str(), type.c_str(), s2.c_str(), s3.c_str());
+}
+
+UnaryInstruction::UnaryInstruction(unsigned opcode, Operand *dst, Operand *src, BasicBlock *insert_bb) : Instruction(UNARY, insert_bb)
+{
+    this->opcode = opcode;
+    operands.push_back(dst);
+    operands.push_back(src);
+    dst->setDef(this);
+    src->addUse(this);
+}
+
+UnaryInstruction::~UnaryInstruction()
+{
+    operands[0]->setDef(nullptr);
+    if(operands[0]->usersNum() == 0)
+        delete operands[0];
+    operands[1]->removeUse(this);
+}
+
+void UnaryInstruction::output() const
+{
+    std::string s1, s2, op, type;
+    s1 = operands[0]->toStr();
+    s2 = operands[1]->toStr();
+    type = operands[0]->getType()->toStr();
+    if(type=="const") type = "i32";
+    if(type=="const*") type = "i32*";
+    switch (opcode)
+    {
+    case ADD:
+        op = "add";
+        break;
+    case SUB:
+        op = "sub"; 
+        break;
+    /*
+    case NOT: // 取反要视作控制流
+        op = "xor";
+        fprintf(yyout, "  %s = %s %s %s\n", s1.c_str(), op.c_str(), type.c_str(), s2.c_str());
+        break;
+    */
+    default:
+        break;
+    }
+    fprintf(yyout, "  %s = %s i32 0, %s\n", s1.c_str(), op.c_str(), s2.c_str());
 }
 
 CmpInstruction::CmpInstruction(unsigned opcode, Operand *dst, Operand *src1, Operand *src2, BasicBlock *insert_bb): Instruction(CMP, insert_bb){
@@ -119,6 +175,8 @@ void CmpInstruction::output() const
     s2 = operands[1]->toStr();
     s3 = operands[2]->toStr();
     type = operands[1]->getType()->toStr();
+    if(type=="const") type = "i32";
+    if(type=="const*") type = "i32*";
     switch (opcode)
     {
     case E:
@@ -184,6 +242,8 @@ void CondBrInstruction::output() const
     std::string cond, type;
     cond = operands[0]->toStr();
     type = operands[0]->getType()->toStr();
+    if(type=="const") type = "i32";
+    if(type=="const*") type = "i32*";
     int true_label = true_branch->getNo();
     int false_label = false_branch->getNo();
     fprintf(yyout, "  br %s %s, label %%B%d, label %%B%d\n", type.c_str(), cond.c_str(), true_label, false_label);
@@ -235,6 +295,8 @@ void RetInstruction::output() const
         std::string ret, type;
         ret = operands[0]->toStr();
         type = operands[0]->getType()->toStr();
+        if(type=="const") type = "i32";
+        if(type=="const*") type = "i32*";
         fprintf(yyout, "  ret %s %s\n", type.c_str(), ret.c_str());
     }
 }
@@ -258,7 +320,39 @@ void AllocaInstruction::output() const
     std::string dst, type;
     dst = operands[0]->toStr();
     type = se->getType()->toStr();
+    if(type=="const") type = "i32";
+    if(type=="const*") type = "i32*";
     fprintf(yyout, "  %s = alloca %s, align 4\n", dst.c_str(), type.c_str());
+}
+
+GlobalAllocaInstruction::GlobalAllocaInstruction(Operand *dst, SymbolEntry *se, Operand *value, BasicBlock* insert_bb) : Instruction(GLOBAL, insert_bb)
+{
+    operands.push_back(dst);
+    dst->setDef(this);
+    this->se = se;
+    this->value = value;
+}
+
+GlobalAllocaInstruction::~GlobalAllocaInstruction()
+{
+    operands[0]->setDef(nullptr);
+    if(operands[0]->usersNum() == 0)
+        delete operands[0];
+}
+
+void GlobalAllocaInstruction::output() const
+{
+    std::string dst, type;
+    dst = operands[0]->toStr();
+    type = se->getType()->toStr();
+    std::string name = static_cast<IdentifierSymbolEntry*>(se)->get_name(); // 全局变量名
+    int val = 0;
+    if(value)
+        val = static_cast<ConstantSymbolEntry*>(value->getSymbolEntry())->getValue();
+    if(type=="i32")
+        fprintf(yyout, "  @%s = dso_local global i32 %d, align 4\n", name.c_str(), val);
+    else if(type == "const")
+        fprintf(yyout, "  @%s = dso_local constant i32 %d, align 4\n", name.c_str(), val);
 }
 
 LoadInstruction::LoadInstruction(Operand *dst, Operand *src_addr, BasicBlock *insert_bb) : Instruction(LOAD, insert_bb)
@@ -285,6 +379,10 @@ void LoadInstruction::output() const
     std::string dst_type;
     dst_type = operands[0]->getType()->toStr();
     src_type = operands[1]->getType()->toStr();
+    if(dst_type=="const") dst_type = "i32";
+    if(dst_type=="const*") dst_type = "i32*";
+    if(src_type=="const") src_type = "i32";
+    if(src_type=="const*") src_type = "i32*";
     fprintf(yyout, "  %s = load %s, %s %s, align 4\n", dst.c_str(), dst_type.c_str(), src_type.c_str(), src.c_str());
 }
 
@@ -308,6 +406,94 @@ void StoreInstruction::output() const
     std::string src = operands[1]->toStr();
     std::string dst_type = operands[0]->getType()->toStr();
     std::string src_type = operands[1]->getType()->toStr();
-
+    if(dst_type=="const") dst_type = "i32";
+    if(dst_type=="const*") dst_type = "i32*";
+    if(src_type=="const") src_type = "i32";
+    if(src_type=="const*") src_type = "i32*";
     fprintf(yyout, "  store %s %s, %s %s, align 4\n", src_type.c_str(), src.c_str(), dst_type.c_str(), dst.c_str());
+}
+
+ZextInstruction::ZextInstruction(Operand *dst, Operand *src, BasicBlock *insert_bb) : Instruction(ZEXT, insert_bb)
+{
+    operands.push_back(dst);
+    operands.push_back(src);
+    dst->setDef(this);
+    src->addUse(this);
+}
+
+ZextInstruction::~ZextInstruction()
+{
+    operands[0]->setDef(nullptr);
+    if(operands[0]->usersNum() == 0)
+        delete operands[0];
+    operands[1]->removeUse(this);
+}
+
+void ZextInstruction::output() const
+{
+    std::string dst = operands[0]->toStr();
+    std::string src = operands[1]->toStr();
+    std::string src_type = operands[1]->getType()->toStr();
+    fprintf(yyout, "  %s = zext %s %s to i32\n", dst.c_str(), src_type.c_str(), src.c_str());
+}
+
+XorInstruction::XorInstruction(Operand *dst, Operand *src, BasicBlock *insert_bb) : Instruction(XOR, insert_bb)
+{
+    operands.push_back(dst);
+    operands.push_back(src);
+    dst->setDef(this);
+    src->addUse(this);
+}
+
+XorInstruction::~XorInstruction()
+{
+    operands[0]->setDef(nullptr);
+    if(operands[0]->usersNum() == 0)
+        delete operands[0];
+    operands[1]->removeUse(this);
+}
+
+void XorInstruction::output() const
+{
+    std::string dst = operands[0]->toStr();
+    std::string src = operands[1]->toStr();
+    std::string src_type = operands[1]->getType()->toStr();
+    fprintf(yyout, "  %s = xor %s %s, -1\n", dst.c_str(), src_type.c_str(), src.c_str());
+}
+
+CallInstruction::CallInstruction(Operand *dst, SymbolEntry *se, std::vector<Operand*> params, BasicBlock *insert_bb) : Instruction(CALL, insert_bb)
+{
+    this->dst = dst;
+    this->func = se;
+    if(dst) dst->setDef(this);
+    for(auto p : params){
+        operands.push_back(p);
+        p->addUse(this);
+    }
+}
+
+CallInstruction::~CallInstruction()
+{
+    if(dst){
+        dst->setDef(nullptr);
+        if(dst->usersNum()==0)
+            delete dst;
+    }
+    for(long unsigned i = 0; i<operands.size(); i++)
+        operands[i]->removeUse(this);
+}
+
+void CallInstruction::output() const
+{
+    fprintf(yyout, "  ");
+    if(dst)
+        fprintf(yyout, "%s = ", dst->toStr().c_str());
+    FunctionType* type = (FunctionType*)(func->getType());
+    fprintf(yyout, "call %s %s(", type->getRetType()->toStr().c_str(), func->toStr().c_str());
+    for(long unsigned i = 0; i<operands.size(); i++){
+        if(i!=0)
+            fprintf(yyout, ",");
+        fprintf(yyout, "%s %s", operands[i]->getType()->toStr().c_str(), operands[i]->toStr().c_str());
+    }
+    fprintf(yyout, ")\n");
 }

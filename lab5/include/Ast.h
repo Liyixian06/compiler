@@ -21,6 +21,7 @@ protected:
     std::vector<Instruction*> false_list;
     static IRBuilder *builder;
     void backPatch(std::vector<Instruction*> &list, BasicBlock*bb);
+    void unbackPatch(std::vector<Instruction*> &list, BasicBlock*bb);
     std::vector<Instruction*> merge(std::vector<Instruction*> &list1, std::vector<Instruction*> &list2);
 
 public:
@@ -245,11 +246,15 @@ class WhileStmt : public StmtNode
 private:
     ExprNode *cond;
     StmtNode *stmt;
+    BasicBlock *cond_bb;
+    BasicBlock *end_bb;
 public:
-    WhileStmt(ExprNode *cond, StmtNode *stmt) : cond(cond), stmt(stmt){};
+    WhileStmt(ExprNode *cond, StmtNode *stmt) : cond(cond), stmt(stmt){cond_bb = end_bb = nullptr;};
     void output(int level);
     void typeCheck();
     void genCode();
+    BasicBlock* get_cond_bb() { return cond_bb; }
+    BasicBlock* get_end_bb() { return end_bb; }
 };
 
 class BreakStmt : public StmtNode

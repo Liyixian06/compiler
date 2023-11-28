@@ -5,6 +5,7 @@ class Unit;
 class Function;
 class BasicBlock;
 
+// 处理一个函数集合unit
 class IRBuilder
 {
 private:

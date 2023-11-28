@@ -31,11 +31,28 @@ void Function::output() const
 {
     FunctionType* funcType = dynamic_cast<FunctionType*>(sym_ptr->getType());
     Type *retType = funcType->getRetType();
-    fprintf(yyout, "define %s %s() {\n", retType->toStr().c_str(), sym_ptr->toStr().c_str());
+    int para_num = funcType->getnum();
+    std::vector<Type*> params_type = funcType->get_params();
+    if(para_num == 0){
+        fprintf(yyout, "define %s %s() {\n", retType->toStr().c_str(), sym_ptr->toStr().c_str());
+    }
+    else { // 有参数时连参数一起输出
+        std::string paramstr;
+        std::vector<Type*>::iterator it = params_type.begin();
+        int i=0;
+        for(; it!=params_type.end(); it++){
+            if(paramstr.size()!=0)
+                paramstr += ",";
+            paramstr += " " + (*it)->toStr() + " " + params[i]->toStr();
+            i++;
+        }
+        fprintf(yyout, "define %s %s(%s) {\n", retType->toStr().c_str(), sym_ptr->toStr().c_str(), paramstr.c_str());
+    }
     std::set<BasicBlock *> v;
     std::list<BasicBlock *> q;
     q.push_back(entry);
     v.insert(entry);
+    // 从函数的第一个块开始，输出后驱的所有块
     while (!q.empty())
     {
         auto bb = q.front();

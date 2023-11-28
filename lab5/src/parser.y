@@ -5,6 +5,8 @@
     extern Ast ast;
     int yylex();
     int yyerror( char const * );
+    int whileDepth = 0;
+    bool needRet = false;
 }
 
 %code requires {
@@ -119,22 +121,39 @@ IfStmt
     }
     ;
 WhileStmt
-    : WHILE LPAREN Cond RPAREN Stmt {
-        $$ = new WhileStmt($3, $5);
+    : WHILE LPAREN Cond RPAREN {
+        whileDepth++;
+    }
+    Stmt {
+        $$ = new WhileStmt($3, $6);
+        whileDepth--;
     }
     ;
 BreakStmt
-    :   BREAK SEMICOLON {$$ = new BreakStmt();}
+    :   BREAK SEMICOLON {
+        if(whileDepth==0){
+            fprintf(stderr, "\"break\" not in WhileStmt\n"); // 检查是否仅出现在while中
+            assert(whileDepth);
+        }
+        $$ = new BreakStmt();
+    }
     ;
 ContinueStmt
-    :   CONTINUE SEMICOLON {$$ = new ContinueStmt();}
+    :   CONTINUE SEMICOLON {
+        if(whileDepth==0){
+            fprintf(stderr, "\"continue\" not in WhileStmt\n"); // 检查是否仅出现在while中
+            assert(whileDepth);
+        }
+        $$ = new ContinueStmt();
+    }
     ;
 ReturnStmt
     :
     RETURN Exp SEMICOLON{
         $$ = new ReturnStmt($2);
+        needRet = false;
     }
-    | RETURN SEMICOLON {$$ = new ReturnStmt();}
+    | RETURN SEMICOLON {$$ = new ReturnStmt(); needRet = false;}
     ;
 /*空语句 只含一个分号*/
 EmptyStmt
@@ -156,40 +175,59 @@ FuncDef
     /*清理符号表，回退到上一个作用域，删除内存*/
     
     /*无参定义*/
-    Type ID LPAREN RPAREN BlockStmt
+    Type ID LPAREN 
     {
-        Type *funcType = new FunctionType($1,{});
-        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
-        identifiers->install($2, se);
+        needRet = true;
         identifiers = new SymbolTable(identifiers);
-        se = identifiers->lookup($2);
-        assert(se != nullptr);
-        $$ = new FunctionDef(se, $5);
+    }
+    RPAREN BlockStmt
+    {
         SymbolTable *top = identifiers;
         identifiers = identifiers->getPrev();
         delete top;
+
+        if(needRet){ // 检查是否缺return语句
+            if($1->isVoid()!=1){
+                fprintf(stderr, "func %s missing return stmt\n",(char*)$2);
+                assert(!needRet);
+            }
+        }
+        Type *funcType = new FunctionType($1,{});
+        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
+        identifiers->install($2, se);
+        se = identifiers->lookup($2);
+        assert(se != nullptr);
+        $$ = new FunctionDef(se, $6);
         delete []$2;
     }
     /*有参列表的函数定义 多了FuncParams*/
     |
     Type ID LPAREN
     {
+        needRet = true;
         identifiers = new SymbolTable(identifiers);
         funcdefpara.reset();
         defpara.reset();
     }
     FuncParams RPAREN BlockStmt
     {
+        SymbolTable *top = identifiers;
+        identifiers = identifiers->getPrev();
+        delete top;
+
+        if(needRet){ // 检查是否缺return语句
+            if($1->isVoid()!=1){
+                fprintf(stderr, "func %s missing return stmt\n",(char*)$2);
+                assert(!needRet);
+            }
+        }
         Type *funcType = new FunctionType($1, defpara.get()); // 添加参数
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
-        identifiers->getPrev()->install($2, se);
+        identifiers->install($2, se);
         se = identifiers->lookup($2);
         assert(se != nullptr);
         /*有参导致占位符不同*/
         $$ = new FunctionDef(se, $7, $5);
-        SymbolTable *top = identifiers;
-        identifiers = identifiers->getPrev();
-        delete top;
         delete []$2;
     }
     ;

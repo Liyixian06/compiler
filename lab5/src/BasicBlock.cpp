@@ -19,7 +19,18 @@ void BasicBlock::insertBack(Instruction *inst)
 // insert the instruction dst before src.
 void BasicBlock::insertBefore(Instruction *dst, Instruction *src)
 {
-    // Todo
+    // 双向链表插入
+    if(src->getNext()==src){
+        src->setNext(dst);
+        dst->setPrev(src);
+        dst->setNext(src);
+        src->setPrev(dst);
+    } else {
+        dst->setPrev(src->getPrev());
+        dst->setNext(src);
+        src->getPrev()->setNext(dst);
+        src->setPrev(dst);
+    }
 
     dst->setParent(this);
 }
@@ -34,7 +45,7 @@ void BasicBlock::remove(Instruction *inst)
 void BasicBlock::output() const
 {
     fprintf(yyout, "B%d:", no);
-
+    // 输出前驱块的id
     if (!pred.empty())
     {
         fprintf(yyout, "%*c; preds = %%B%d", 32, '\t', pred[0]->getNo());
@@ -42,6 +53,7 @@ void BasicBlock::output() const
             fprintf(yyout, ", %%B%d", (*i)->getNo());
     }
     fprintf(yyout, "\n");
+    // 遍历输出当前块存放的指令
     for (auto i = head->getNext(); i != head; i = i->getNext())
         i->output();
 }
@@ -68,7 +80,7 @@ void BasicBlock::removePred(BasicBlock *bb)
     pred.erase(std::find(pred.begin(), pred.end(), bb));
 }
 
-BasicBlock::BasicBlock(Function *f)
+BasicBlock::BasicBlock(Function *f) // 设置当前块对应的函数
 {
     this->no = SymbolTable::getLabel();
     f->insertBlock(this);
@@ -77,9 +89,10 @@ BasicBlock::BasicBlock(Function *f)
     head->setParent(this);
 }
 
-BasicBlock::~BasicBlock()
+BasicBlock::~BasicBlock() 
 {
-    Instruction *inst;
+    // 首先释放当前块的所有指令
+    Instruction *inst; 
     inst = head->getNext();
     while (inst != head)
     {
@@ -88,6 +101,7 @@ BasicBlock::~BasicBlock()
         inst = inst->getNext();
         delete t;
     }
+    // 然后释放保存的前驱和后继块
     for(auto &bb:pred)
         bb->removeSucc(this);
     for(auto &bb:succ)

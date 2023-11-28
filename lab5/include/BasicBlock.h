@@ -11,8 +11,8 @@ class BasicBlock
     typedef std::vector<BasicBlock *>::iterator bb_iterator;
 
 private:
-    std::vector<BasicBlock *> pred, succ;
-    Instruction *head;
+    std::vector<BasicBlock *> pred, succ; // 前驱块和后继块
+    Instruction *head; // 第一条指令
     Function *parent;
     int no;
 
@@ -23,7 +23,7 @@ public:
     void insertBack(Instruction *);
     void insertBefore(Instruction *, Instruction *);
     void remove(Instruction *);
-    bool empty() const { return head->getNext() == head;}
+    bool empty() const { return head->getNext() == head;} // 判断是否为空
     void output() const;
     bool succEmpty() const { return succ.empty(); };
     bool predEmpty() const { return pred.empty(); };

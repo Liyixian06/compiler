@@ -12,6 +12,8 @@ void Unit::removeFunc(Function *func)
 
 void Unit::output() const
 {
+    for(auto &global_var : global_list)
+        global_var->output();
     for (auto &func : func_list)
         func->output();
 }
@@ -20,4 +22,6 @@ Unit::~Unit()
 {
     for(auto &func:func_list)
         delete func;
+    for(auto &global_var : global_list)
+        delete global_var;
 }
