@@ -82,19 +82,19 @@ public:
     static Type *constType;
 };
 
-class FuncDefPara // 函数定义参数个数
+class FuncParaNum // 参数个数
 {
 private:
     int num;
 public:
-    FuncDefPara(){num = 0;}
+    FuncParaNum(){num = 0;}
     void plus(){num++;}
     void reset(){num = 0;}
     int ret_num(){return num;}
 };
-static FuncDefPara funcdefpara;
+static FuncParaNum funcdefpara, funccallpara;
 
-class FuncParaType
+class FuncParaType // 参数类型
 {
 private:
     std::vector<Type*> paramsType;
@@ -107,19 +107,7 @@ public:
 static FuncParaType defpara;
 static FuncParaType callpara;
 
-class FuncCallPara
-{
-private:
-    int num;
-public:
-    FuncCallPara(){num = 0;}
-    void plus(){num++;}
-    void reset(){num = 0;}
-    int ret_num(){return num;}
-};
-static FuncCallPara funccallpara;
-
-class FuncCallParaType
+class FuncCallParaType // 实参
 {
 private:
     std::vector<Operand*> paralist;

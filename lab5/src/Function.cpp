@@ -37,13 +37,13 @@ void Function::output() const
         fprintf(yyout, "define %s %s() {\n", retType->toStr().c_str(), sym_ptr->toStr().c_str());
     }
     else { // 有参数时连参数一起输出
-        std::string paramstr;
-        std::vector<Type*>::iterator it = params_type.begin();
+        std::string paramstr = "";
+        std::vector<Type*>::iterator it;
         int i=0;
-        for(; it!=params_type.end(); it++){
+        for(it = params_type.begin(); it!=params_type.end(); it++){
             if(paramstr.size()!=0)
                 paramstr += ",";
-            paramstr += " " + (*it)->toStr() + " " + params[i]->toStr();
+            paramstr = paramstr + " " + (*it)->toStr() + " " + this->params[i]->toStr();
             i++;
         }
         fprintf(yyout, "define %s %s(%s) {\n", retType->toStr().c_str(), sym_ptr->toStr().c_str(), paramstr.c_str());

@@ -1,14 +1,14 @@
 SRC_PATH ?= src
 INC_PATH += include
 BUILD_PATH ?= build
-TEST_PATH ?= test/level1-2
+TEST_PATH ?= test/tmp
 OBJ_PATH ?= $(BUILD_PATH)/obj
 BINARY ?= $(BUILD_PATH)/compiler
 SYSLIB_PATH ?= sysyruntimelibrary
 
 INC = $(addprefix -I, $(INC_PATH))
 SRC = $(shell find $(SRC_PATH)  -name "*.cpp")
-CFLAGS = -O2 -g -Wall -Werror $(INC)
+CFLAGS = -O2 -g -Wall $(INC)
 FLEX ?= $(SRC_PATH)/lexer.l
 LEXER ?= $(addsuffix .cpp, $(basename $(FLEX)))
 BISON ?= $(SRC_PATH)/parser.y
@@ -43,7 +43,7 @@ $(OBJ_PATH)/%.o:$(SRC_PATH)/%.cpp
 	@g++ $(CFLAGS) -c -o $@ $<
 
 $(BINARY):$(OBJ)
-	@g++ -O2 -g -o $@ $^
+	@g++ -O0 -g -o $@ $^
 
 app:$(LEXER) $(PARSER) $(BINARY)
 

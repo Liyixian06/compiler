@@ -23,9 +23,10 @@ private:
     SymbolEntry *sym_ptr; // 存放函数的名称、返回类型
     BasicBlock *entry; // 第一个块
     Unit *parent; // 函数处于的Unit
-    std::vector<Operand*> params; // 函数的参数类型
 
 public:
+    std::vector<Operand*> params; // 函数的参数类型
+
     Function(Unit *, SymbolEntry *);
     ~Function();
     void insertBlock(BasicBlock *bb) { block_list.push_back(bb); };

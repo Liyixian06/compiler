@@ -17,6 +17,7 @@ private:
     static int counter;
     int seq;
 protected:
+    // 跳转目标*不确定*的BasicBlock的列表
     std::vector<Instruction*> true_list;
     std::vector<Instruction*> false_list;
     static IRBuilder *builder;
@@ -34,6 +35,8 @@ public:
     std::vector<Instruction*>& trueList() {return true_list;}
     std::vector<Instruction*>& falseList() {return false_list;}
 };
+
+static bool is_cond = false;
 
 // 表达式节点，存储的是等号左侧的符号表表项
 class ExprNode : public Node
@@ -68,7 +71,7 @@ private:
     ExprNode *expr;
 public:
     enum {ADD, SUB, NOT};
-    UnaryExpr(SymbolEntry *se, int op, ExprNode*expr) : ExprNode(se), op(op), expr(expr){}; // 类双目的构造
+    UnaryExpr(SymbolEntry *se, int op, ExprNode*expr) : ExprNode(se), op(op), expr(expr){dst = new Operand(se);}; // 类双目的构造
     void output(int level);
     void typeCheck();
     void genCode();
@@ -88,7 +91,10 @@ public:
 class Id : public ExprNode
 {
 public:
-    Id(SymbolEntry *se) : ExprNode(se){SymbolEntry *temp = new TemporarySymbolEntry(se->getType(), SymbolTable::getLabel()); dst = new Operand(temp);};
+    Id(SymbolEntry *se) : ExprNode(se){
+        SymbolEntry *temp = new TemporarySymbolEntry(se->getType(), SymbolTable::getLabel()); 
+        dst = new Operand(temp);
+    };
     void output(int level);
     void typeCheck();
     void genCode();
@@ -101,7 +107,9 @@ private:
     SymbolEntry* st;
     ExprNode* params;
 public:
-    FuncCallExp(SymbolEntry *se, SymbolEntry* st, ExprNode *params = nullptr) : ExprNode(se), st(st), params(params){};
+    FuncCallExp(SymbolEntry *se, SymbolEntry* st, ExprNode *params = nullptr) : ExprNode(se), st(st), params(params){
+        dst = new Operand(se);
+    };
     void output(int level);
     void typeCheck();
     void genCode();
@@ -210,7 +218,7 @@ private:
     ExprNode *prevparam;
     ExprNode *param;
 public:
-    FuncRParams(SymbolEntry *se, ExprNode *prevparam, ExprNode *param = nullptr) : ExprNode(se), prevparam(prevparam), param(param){};
+    FuncRParams(SymbolEntry *se, ExprNode *prevparam, ExprNode *param = nullptr) : ExprNode(se), prevparam(prevparam), param(param){dst = new Operand(se);};
     void output(int level);
     void typeCheck();
     void genCode();

@@ -105,11 +105,17 @@ int main(int argc, char *argv[])
     identifiers->install("stoptime", se);
 
     yyparse();
-    if(dump_type == AST)
+    if(dump_type == AST){
         ast.output();
+        fprintf(stderr, "ast output finished\n");
+    }
     ast.typeCheck();
+    fprintf(stderr, "typecheck finished\n");
     ast.genCode(&unit);
-    if(dump_type == IR)
+    fprintf(stderr, "LLVM IR finished\n");
+    if(dump_type == IR){
         unit.output();
+        fprintf(stderr, "LLVM IR output finished\n");
+    }
     return 0;
 }

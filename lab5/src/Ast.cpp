@@ -118,6 +118,7 @@ void BinaryExpr::genCode()
                 break;
         }
         new CmpInstruction(opcode, dst, src1, src2, bb);
+        dst->getSymbolEntry()->setType(TypeSystem::boolType);
         // 实际上不执行什么
         BasicBlock *true_bb, *false_bb, *temp_bb;
         true_bb = new BasicBlock(func);
@@ -125,6 +126,7 @@ void BinaryExpr::genCode()
         temp_bb = new BasicBlock(func);
         true_list.push_back(new CondBrInstruction(true_bb, temp_bb, dst, bb));
         false_list.push_back(new UncondBrInstruction(false_bb, temp_bb));
+        is_cond = true;
     }
     else if(op >= ADD && op <= MOD)
     {
@@ -151,7 +153,18 @@ void BinaryExpr::genCode()
             opcode = BinaryInstruction::MOD;
             break;
         }
-        new BinaryInstruction(opcode, dst, src1, src2, bb);
+        Operand* n1 = src1, *n2 = src2;
+        if(src1->getType()== TypeSystem::boolType){
+            SymbolEntry* s = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+            n1 = new Operand(s);
+            new ZextInstruction(n1, src1, bb);
+        }
+        if(src2->getType()== TypeSystem::boolType){
+            SymbolEntry* s = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+            n2 = new Operand(s);
+            new ZextInstruction(n2, src2, bb);
+        }
+        new BinaryInstruction(opcode, dst, n1, n2, bb);
     }
 }
 
@@ -173,12 +186,36 @@ void UnaryExpr::genCode()
             opcode = UnaryInstruction::NOT;
             break;
     }
-    dst = new Operand(symbolEntry);
     if(opcode == UnaryInstruction::NOT){
-        new XorInstruction(dst, src, bb);
-        return;
+        if(src->getType() == TypeSystem::intType){
+            new CmpInstruction(CmpInstruction::E, dst, src, new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0)), bb);
+        }
+        else if(src->getType() == TypeSystem::boolType)
+            new XorInstruction(dst, src, bb);
+        
+        dst->getSymbolEntry()->setType(TypeSystem::boolType);
+        /*
+        Operand* tmp2 = new Operand(new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel()));
+        new ZextInstruction(tmp2, dst, bb);
+        dst = tmp2;
+        
+        SymbolEntry* int1 = new ConstantSymbolEntry(TypeSystem::constType, -1);
+        Operand* src1 = new Operand(int1);
+        dst->getSymbolEntry()->setType(TypeSystem::intType);
+        new CmpInstruction(CmpInstruction::E, dst, src, src1, bb);
+        */
     }
-    new UnaryInstruction(opcode, dst, src, bb);
+    else {
+        dst = new Operand(symbolEntry);
+        Operand* n = src;
+        if(src->getType()== TypeSystem::boolType){
+            SymbolEntry* s = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+            n = new Operand(s);
+            new ZextInstruction(n, src, bb);
+        }
+        new UnaryInstruction(opcode, dst, n, bb);
+        dst->getSymbolEntry()->setType(TypeSystem::intType);
+    }
 }
 
 void Constant::genCode()
@@ -190,7 +227,7 @@ void Id::genCode()
 {
     BasicBlock *bb = builder->getInsertBB();
     Operand *addr = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getAddr();
-    if(this->getSymPtr()->getType()->isInt())
+    if(this->getSymPtr()->getType()->isInt() || this->getSymPtr()->getType()->isConst() || this->getSymPtr()->getType()->isFunc())
         new LoadInstruction(dst, addr, bb);
 }
 
@@ -201,6 +238,7 @@ void FuncCallExp::genCode()
     if(params){
         std::vector<Operand*> params_op;
         params->genCode();
+        // 遍历参数，因为要从右到左入栈，所以反向遍历
         std::vector<Operand*> tmp_para = callparamstype.get();
         for(auto it = tmp_para.rbegin(); it!=tmp_para.rend(); it++)
             params_op.push_back(*it);
@@ -243,7 +281,7 @@ void VarDef::genCode()
         Unit* unit = builder->getUnit();
         unit->push_global(alloca);
     }
-    else if (se->isLocal()){
+    else if (se->isLocal() || se->isParam()){
         Function *func = builder->getInsertBB()->getParent();
         BasicBlock *entry = func->getEntry();
         Instruction *alloca;
@@ -256,6 +294,14 @@ void VarDef::genCode()
         alloca = new AllocaInstruction(addr, se);                   // allocate space for local id in function stack.
         entry->insertFront(alloca);                                 // allocate instructions should be inserted into the begin of the entry block.
         se->setAddr(addr);                                          // set the addr operand in symbol entry so that we can use it in subsequent code generation.
+        if(se->isParam()){
+            type = se->getType();
+            SymbolEntry* s = new TemporarySymbolEntry(type, SymbolTable::getLabel());
+            Operand* src = new Operand(s);
+            BasicBlock* bb = builder->getInsertBB();
+            new StoreInstruction(addr, src, bb);
+            func->push_para(src);
+        }
         if(expr){
             expr->genCode();
             BasicBlock *bb;
@@ -315,20 +361,19 @@ void FuncParam::genCode()
     IdentifierSymbolEntry *se = dynamic_cast<IdentifierSymbolEntry*>(id->getSymPtr());
     Function *func = builder->getInsertBB()->getParent();
     BasicBlock *entry = func->getEntry();
-    Instruction* alloca;
-    Operand *addr;
-    SymbolEntry *addr_se;
-    Type *type;
-    type = new PointerType(se->getType());
-    addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel());
-    addr = new Operand(addr_se);
-    alloca = new AllocaInstruction(addr, se);
+    Type* type = new PointerType(se->getType());
+    SymbolEntry* addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel());
+    Operand* addr = new Operand(addr_se);
+    Instruction* alloca = new AllocaInstruction(addr, se);
     entry->insertFront(alloca);
     se->setAddr(addr);
+
+    BasicBlock* bb;
+    bb = builder->getInsertBB();
+    new StoreInstruction(addr, id->getOperand(), bb);
+    func->push_para(id->getOperand());
     if(expr){
         expr->genCode();
-        BasicBlock *bb;
-        bb = builder->getInsertBB();
         new StoreInstruction(addr, expr->getOperand(), bb);
     }                                   
 }
@@ -342,8 +387,10 @@ void FuncParams::genCode()
 void FuncRParams::genCode()
 {
     prevparam->genCode();
-    dst = prevparam->getOperand();
-    callparamstype.push(dst);
+    if(!param){
+        dst = prevparam->getOperand();
+        callparamstype.push(dst);
+    }
     if(param){
         param->genCode();
         dst = param->getOperand();
@@ -360,7 +407,23 @@ void IfStmt::genCode()
     then_bb = new BasicBlock(func);
     end_bb = new BasicBlock(func);
 
+    is_cond = false;
     cond->genCode();
+
+    // 没有条件跳转语句时手动添加，下同
+    if(!is_cond){
+        BasicBlock* bb = builder->getInsertBB();
+        Operand* src1 = new Operand(cond->getSymPtr());
+        SymbolEntry* integer = new ConstantSymbolEntry(TypeSystem::constType, 0);
+        Operand* src2 = new Operand(integer);
+        SymbolEntry* tse = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
+        Operand* dst = new Operand(tse);
+        new CmpInstruction(CmpInstruction::G, dst, src1, src2, bb);
+        Instruction* tmp = new CondBrInstruction(nullptr, nullptr, dst, bb);
+        cond->trueList().push_back(tmp);
+        cond->falseList().push_back(tmp);
+    }
+
     backPatch(cond->trueList(), then_bb);
     unbackPatch(cond->falseList(), end_bb);
 
@@ -381,7 +444,22 @@ void IfElseStmt::genCode()
     end_bb = new BasicBlock(func);
     else_bb = new BasicBlock(func);
 
+    is_cond = false;
     cond->genCode();
+
+    if(!is_cond){
+        BasicBlock* bb = builder->getInsertBB();
+        Operand* src1 = new Operand(cond->getSymPtr());
+        SymbolEntry* integer = new ConstantSymbolEntry(TypeSystem::constType, 0);
+        Operand* src2 = new Operand(integer);
+        SymbolEntry* tse = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
+        Operand* dst = new Operand(tse);
+        new CmpInstruction(CmpInstruction::G, dst, src1, src2, bb);
+        Instruction* tmp = new CondBrInstruction(nullptr, nullptr, dst, bb);
+        cond->trueList().push_back(tmp);
+        cond->falseList().push_back(tmp);
+    }
+
     backPatch(cond->trueList(), then_bb);
     unbackPatch(cond->falseList(), else_bb);
 
@@ -414,7 +492,22 @@ void WhileStmt::genCode()
     new UncondBrInstruction(cond_bb, bb);
 
     builder->setInsertBB(cond_bb);
+    is_cond = false;
     cond->genCode();
+
+    if(!is_cond){
+        BasicBlock* bb = builder->getInsertBB();
+        Operand* src1 = new Operand(cond->getSymPtr());
+        SymbolEntry* integer = new ConstantSymbolEntry(TypeSystem::constType, 0);
+        Operand* src2 = new Operand(integer);
+        SymbolEntry* tse = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
+        Operand* dst = new Operand(tse);
+        new CmpInstruction(CmpInstruction::G, dst, src1, src2, bb);
+        Instruction* tmp = new CondBrInstruction(nullptr, nullptr, dst, bb);
+        cond->trueList().push_back(tmp);
+        cond->falseList().push_back(tmp);
+    }
+
     backPatch(cond->trueList(), stmt_bb);
     unbackPatch(cond->falseList(), end_bb);
 

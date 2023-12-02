@@ -350,9 +350,9 @@ void GlobalAllocaInstruction::output() const
     if(value)
         val = static_cast<ConstantSymbolEntry*>(value->getSymbolEntry())->getValue();
     if(type=="i32")
-        fprintf(yyout, "  @%s = dso_local global i32 %d, align 4\n", name.c_str(), val);
+        fprintf(yyout, "@%s = dso_local global i32 %d, align 4\n", name.c_str(), val);
     else if(type == "const")
-        fprintf(yyout, "  @%s = dso_local constant i32 %d, align 4\n", name.c_str(), val);
+        fprintf(yyout, "@%s = dso_local constant i32 %d, align 4\n", name.c_str(), val);
 }
 
 LoadInstruction::LoadInstruction(Operand *dst, Operand *src_addr, BasicBlock *insert_bb) : Instruction(LOAD, insert_bb)
@@ -433,8 +433,8 @@ void ZextInstruction::output() const
 {
     std::string dst = operands[0]->toStr();
     std::string src = operands[1]->toStr();
-    std::string src_type = operands[1]->getType()->toStr();
-    fprintf(yyout, "  %s = zext %s %s to i32\n", dst.c_str(), src_type.c_str(), src.c_str());
+    //std::string src_type = operands[1]->getType()->toStr();
+    fprintf(yyout, "  %s = zext i1 %s to i32\n", dst.c_str(), src.c_str());
 }
 
 XorInstruction::XorInstruction(Operand *dst, Operand *src, BasicBlock *insert_bb) : Instruction(XOR, insert_bb)
@@ -458,7 +458,7 @@ void XorInstruction::output() const
     std::string dst = operands[0]->toStr();
     std::string src = operands[1]->toStr();
     std::string src_type = operands[1]->getType()->toStr();
-    fprintf(yyout, "  %s = xor %s %s, -1\n", dst.c_str(), src_type.c_str(), src.c_str());
+    fprintf(yyout, "  %s = xor %s %s, true\n", dst.c_str(), src_type.c_str(), src.c_str());
 }
 
 CallInstruction::CallInstruction(Operand *dst, SymbolEntry *se, std::vector<Operand*> params, BasicBlock *insert_bb) : Instruction(CALL, insert_bb)
@@ -486,7 +486,7 @@ CallInstruction::~CallInstruction()
 void CallInstruction::output() const
 {
     fprintf(yyout, "  ");
-    if(dst)
+    if(!dst->getType()->isVoid())
         fprintf(yyout, "%s = ", dst->toStr().c_str());
     FunctionType* type = (FunctionType*)(func->getType());
     fprintf(yyout, "call %s %s(", type->getRetType()->toStr().c_str(), func->toStr().c_str());
