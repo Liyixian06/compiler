@@ -493,7 +493,7 @@ void CallInstruction::output() const
     for(long unsigned i = 0; i<operands.size(); i++){
         if(i!=0)
             fprintf(yyout, ",");
-        fprintf(yyout, "%s %s", operands[i]->getType()->toStr().c_str(), operands[i]->toStr().c_str());
+        fprintf(yyout, "%s %s", (operands[i]->getType()->toStr() == "const"? "i32" : operands[i]->getType()->toStr().c_str()), operands[i]->toStr().c_str());
     }
     fprintf(yyout, ")\n");
 }
