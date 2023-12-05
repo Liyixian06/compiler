@@ -1,3 +1,20 @@
+1205  
+- break & continue  
+
+level2-1 和 2-2 的测试结果：  
+PASS: 002_var_defn2  
+PASS: 060_scope  
+FAIL: 096_side_effect   Wrong Answer  
+PASS: 101_scope2  
+Total: 4        Accept: 3       Fail: 1  
+
+PASS: 037_break  
+PASS: 038_continue  
+PASS: 052_comment1  
+PASS: 053_comment2  
+FAIL: 090_int_io        Compile Error  
+Total: 5        Accept: 4       Fail: 1  
+
 1204  
 level1-1 和 1-2 的测试用例全部通过。
 

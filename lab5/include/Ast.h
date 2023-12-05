@@ -257,7 +257,8 @@ private:
     BasicBlock *cond_bb;
     BasicBlock *end_bb;
 public:
-    WhileStmt(ExprNode *cond, StmtNode *stmt) : cond(cond), stmt(stmt){cond_bb = end_bb = nullptr;};
+    WhileStmt(ExprNode *cond, StmtNode *stmt=nullptr) : cond(cond), stmt(stmt){cond_bb = end_bb = nullptr;};
+    void setStmt(StmtNode *stmt){this->stmt = stmt;};
     void output(int level);
     void typeCheck();
     void genCode();
@@ -267,8 +268,10 @@ public:
 
 class BreakStmt : public StmtNode
 {
+private:
+    StmtNode* whileStmt;
 public:
-    BreakStmt(){};
+    BreakStmt(StmtNode* whileStmt) : whileStmt(whileStmt){};
     void output(int level);
     void typeCheck();
     void genCode();
@@ -276,8 +279,10 @@ public:
 
 class ContinueStmt : public StmtNode
 {
+private:
+    StmtNode* whileStmt;
 public:
-    ContinueStmt(){};
+    ContinueStmt(StmtNode* whileStmt) : whileStmt(whileStmt){};
     void output(int level);
     void typeCheck();
     void genCode();

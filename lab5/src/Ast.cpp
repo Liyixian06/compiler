@@ -616,26 +616,22 @@ void WhileStmt::genCode()
 
 void BreakStmt::genCode()
 {
-    /*
+    //跳转到所在的while语句的end
     Function* func = builder->getInsertBB()->getParent();
     BasicBlock *bb = builder->getInsertBB();
-    // TO DO，需要跳转到*所在的*while语句的end
-    //new UncondBrInstruction(WhileStmt->get_end_bb(), bb);
-    BasicBlock *break_bb = new BasicBlock(func);
-    builder->setInsertBB(break_bb);
-    */
+    new UncondBrInstruction(((WhileStmt*)whileStmt)->get_end_bb(), bb);
+    BasicBlock *nxt_bb = new BasicBlock(func);
+    builder->setInsertBB(nxt_bb);
 }
 
 void ContinueStmt::genCode()
 {
-    /*
+    //跳转到所在的while语句的cond
     Function* func = builder->getInsertBB()->getParent();
     BasicBlock *bb = builder->getInsertBB();
-    // TO DO，需要跳转到所在的while语句的cond
-    //new UncondBrInstruction(WhileStmt->get_cond_bb(), bb);
-    BasicBlock *continue_bb = new BasicBlock(func);
-    builder->setInsertBB(continue_bb);
-    */
+    new UncondBrInstruction(((WhileStmt*)whileStmt)->get_cond_bb(), bb);
+    BasicBlock *nxt_bb = new BasicBlock(func);
+    builder->setInsertBB(nxt_bb);
 }
 
 void ReturnStmt::genCode()

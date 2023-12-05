@@ -1,5 +1,6 @@
 %code top{
     #include <iostream>
+    #include <stack>
     #include <assert.h>
     #include "parser.h"
     extern Ast ast;
@@ -7,6 +8,7 @@
     int yyerror( char const * );
     int whileDepth = 0;
     bool needRet = false;
+    std::stack<StmtNode*> whilestk;
 }
 
 %code requires {
@@ -123,9 +125,16 @@ IfStmt
 WhileStmt
     : WHILE LPAREN Cond RPAREN {
         whileDepth++;
+        StmtNode* whileNode = new WhileStmt($3);
+        $<stmttype>$ = whileNode;
+        whilestk.push(whileNode);
     }
     Stmt {
-        $$ = new WhileStmt($3, $6);
+        StmtNode* whileNode = $<stmttype>5;
+        ((WhileStmt*)whileNode)->setStmt($6);
+        $$ = whileNode;
+        whilestk.pop();
+        //$$ = new WhileStmt($3, $6);
         whileDepth--;
     }
     ;
@@ -135,7 +144,7 @@ BreakStmt
             fprintf(stderr, "\"break\" not in WhileStmt\n"); // 检查是否仅出现在while中
             assert(whileDepth);
         }
-        $$ = new BreakStmt();
+        $$ = new BreakStmt(whilestk.top());
     }
     ;
 ContinueStmt
@@ -144,7 +153,7 @@ ContinueStmt
             fprintf(stderr, "\"continue\" not in WhileStmt\n"); // 检查是否仅出现在while中
             assert(whileDepth);
         }
-        $$ = new ContinueStmt();
+        $$ = new ContinueStmt(whilestk.top());
     }
     ;
 ReturnStmt
