@@ -69,6 +69,9 @@ SymbolTable::SymbolTable(SymbolTable *prev)
     4. If you find the entry, return it.
     5. If you can't find it in all symbol tables, return nullptr.
 */
+
+// 在当前符号表及其前面的符号表中查找
+// 通过迭代遍历每个符号表，直到找到符号表项或者到达全局符号表（level == 0）为止。
 SymbolEntry* SymbolTable::lookup(std::string name)
 {
     SymbolTable* p = this;
@@ -77,10 +80,14 @@ SymbolEntry* SymbolTable::lookup(std::string name)
         p = p->prev;
         it = p->symbolTable.find(name);
     }
+    // 如果找到符号表项，则返回该符号表项；否则返回nullptr。
     if(it != p->symbolTable.end()) return it->second;
     else return nullptr;
 }
 
+// 只在当前符号表中查找符号表项
+// 使用 count 函数来检查当前符号表是否包含给定名称的符号表项。
+// 如果包含，返回该符号表项；否则返回nullptr。
 SymbolEntry* SymbolTable::lookup_inthis(std::string name)
 {
     SymbolTable* p = this;
@@ -89,29 +96,35 @@ SymbolEntry* SymbolTable::lookup_inthis(std::string name)
     return nullptr;
 }
 
-SymbolEntry* SymbolTable::search_func() // 查找最近函数的符号表项
+// 查找最近函数的符号表项
+SymbolEntry* SymbolTable::search_func() 
 {
-    SymbolTable* p = this;
+    SymbolTable* p = this;  // 从当前符号表开始搜索
     std::map<std::string, SymbolEntry*>::iterator it;
+    // 循环遍历当前符号表以及其前面的符号表
     while(p->prev){
         it = p->symbolTable.begin();
         while(it!=p->symbolTable.end()){
             SymbolEntry* se = it->second;
+            // 如果符号表项的类型为函数类型，则返回该符号表项
             if(se->getType()->isFunc()==1){
                 return se;
             }
             it++;
         }
-        p = p->getPrev();
+        p = p->getPrev();  // 移动到前一个符号表
     }
+    // 如果前面的符号表没有包含函数符号表项，再次遍历当前符号表
     it = p->symbolTable.begin();
     while(it!=p->symbolTable.end()){
         SymbolEntry* se = it->second;
+        // 如果符号表项的类型为函数类型，则返回该符号表项
         if(se->getType()->isFunc()==1){
             return se;
         }
         it++;
     }
+    // 如果都没有找到函数符号表项，则返回nullptr
     return nullptr;
 }
 

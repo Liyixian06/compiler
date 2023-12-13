@@ -90,7 +90,7 @@ public:
     FuncParaNum(){num = 0;}
     void plus(){num++;}
     void reset(){num = 0;}
-    int ret_num(){return num;}
+    int ret_num(){return num;}  // 获取当前参数个数
 };
 static FuncParaNum funcdefpara, funccallpara;
 
@@ -100,7 +100,7 @@ private:
     std::vector<Type*> paramsType;
 public:
     FuncParaType(){paramsType = {};}
-    void push(Type* p) {paramsType.push_back(p);}
+    void push(Type* p) {paramsType.push_back(p);}  // 将参数类型加入参数类型列表
     std::vector<Type*> get() {return paramsType;}
     void reset() {paramsType.clear();}
 };

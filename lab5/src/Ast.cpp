@@ -724,14 +724,18 @@ void Ast::typeCheck()
 
 void BinaryExpr::typeCheck()
 {
+    // 对左右表达式进行类型检查
     expr1->typeCheck();
     expr2->typeCheck();
+    // 获取左右表达式的类型
     Type* type1 = expr1->getSymPtr()->getType();
     Type* type2 = expr2->getSymPtr()->getType();
+    // 检查左右表达式是否为 void 类型
     if(type1->isVoid() || type2->isVoid()){
         fprintf(stderr, "type %s in binaryexpr is void\n", type1->toStr().c_str());
         exit(EXIT_FAILURE);
     }
+    // 检查左右表达式的类型是否一致
     if(type1 != type2){
         if(!(
         (type1->toStr()=="i32" && type2->toStr()=="const") // int 和 const
@@ -751,14 +755,15 @@ void BinaryExpr::typeCheck()
             exit(EXIT_FAILURE);
         }
     }
+    // 设置当前二进制表达式的类型为左表达式的类型
     symbolEntry->setType(type1);
 }
 
 void UnaryExpr::typeCheck()
 {
     expr->typeCheck();
-    Type* type1 = expr->getSymPtr()->getType();
-    symbolEntry->setType(type1);
+    Type* type1 = expr->getSymPtr()->getType();  // 获取表达式的类型
+    symbolEntry->setType(type1); // 一元表达式的类型推导规则，即一元表达式的类型与其子表达式的类型一致。
 }
 
 void Constant::typeCheck() // 判断是否为const类型
@@ -801,11 +806,13 @@ void VarDecl::typeCheck()
 
 void VarDef::typeCheck()
 {
-    Type* type1 = id->getSymPtr()->getType();
+    Type* type1 = id->getSymPtr()->getType();  // 获取变量标识符的类型
+    // 检查变量标识符的类型
     if(type1->isInt()!=1){
         fprintf(stderr, "vardef id type %s error\n", type1->toStr().c_str());
         exit(EXIT_FAILURE);
     }
+    // 检查初始化表达式的类型: 如果变量定义包含初始化表达式，就对初始化表达式进行类型检查
     if(expr){
         expr->typeCheck();
         Type* type2 = expr->getSymPtr()->getType();
@@ -842,13 +849,16 @@ void ConstDef::typeCheck()
 void FuncParam::typeCheck()
 {
     Type* type1 = id->getSymPtr()->getType();
+    // 检查函数参数标识符的类型是否为整数
     if(type1->isInt()!=1){
         fprintf(stderr, "funcparam id type %s error\n", type1->toStr().c_str());
         exit(EXIT_FAILURE);
     }
+    // 如果有默认值表达式
     if(expr){
         expr->typeCheck();
         Type* type2 = expr->getSymPtr()->getType();
+        // 检查默认值表达式的类型是否为常量或整数
         if((type2->isConst()||type2->isInt())!=1){
             fprintf(stderr, "funcparam expr type %s error\n", type2->toStr().c_str());
             exit(EXIT_FAILURE);

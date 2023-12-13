@@ -440,11 +440,11 @@ Cond
 FuncCall
     : // 函数调用时是否未定义
     ID LPAREN RPAREN { // main()
-        SymbolEntry *st = identifiers->lookup($1);
+        SymbolEntry *st = identifiers->lookup($1); // 查找函数在符号表中的条目
         if(st == nullptr){
             fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
             delete []$1;
-            assert(st!=nullptr);
+            assert(st!=nullptr);  // 如果函数未定义，报错并中止程序
         }
         Type* tmp = st->getType();
         FunctionType* type = static_cast<FunctionType*>(tmp);
@@ -452,17 +452,18 @@ FuncCall
         if(para_num!=0){
             fprintf(stderr, "funccall %s params num error\n", (char*)$1);
             assert(para_num == 0);
-        }
+        }  // 如果参数个数不为零，报错并中止程序
         SymbolEntry *se = new TemporarySymbolEntry(type->getRetType(), SymbolTable::getLabel());
-        $$ = new FuncCallExp(se, st);
+        $$ = new FuncCallExp(se, st);  // // 创建一个函数调用表达式的实例
     }
     | ID LPAREN {
+        // 处理函数调用时的情况（有参数）
         funccallpara.reset();
         callpara.reset();
     }
     FuncRParams RPAREN { //add(a,b)
-    if($1!=(char*)"putf"){
-        SymbolEntry *st = identifiers->lookup($1);
+    if($1!=(char*)"putf"){  // 排除特殊
+        SymbolEntry *st = identifiers->lookup($1);  // 查找函数在符号表中的条目
         if(st == nullptr){
             fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
             delete []$1;
@@ -472,23 +473,23 @@ FuncCall
         Type* tmp = st->getType();
         FunctionType* type = static_cast<FunctionType*>(tmp);
         int para_num = type->getnum(); // 定义时的参数个数
-        std::vector<Type*> para_type = type->get_params(); // 形参类型
+        std::vector<Type*> para_type = type->get_params(); // 形参类型列表
         int call_num = funccallpara.ret_num(); // 调用时的参数个数
-        std::vector<Type*> call_type = callpara.get(); // 实参类型
+        std::vector<Type*> call_type = callpara.get(); // 实参类型列表
         if(para_num != call_num){
             fprintf(stderr, "funccall %s params num error\n", (char*)$1);
-            assert(para_num == call_num);
+            assert(para_num == call_num);  // 如果参数个数不匹配，报错并中止程序
         }
         else if(name!="putint" && name!="putch" && name!="getint" && name!="getch"){
             for(int i=0; i<para_num; i++){
                 if(para_type[i]->isVoid() || call_type[i]->isVoid()){
                     fprintf(stderr, "funccall %s params type error\n", (char*)$1);
-                    assert(para_type[i] == call_type[i]);
+                    assert(para_type[i] == call_type[i]);  // 如果参数类型不匹配
                 }
             }
         }
         SymbolEntry *se = new TemporarySymbolEntry(type->getRetType(), SymbolTable::getLabel());
-        $$ = new FuncCallExp(se, st, $4);
+        $$ = new FuncCallExp(se, st, $4);  // 创建一个函数调用表达式的实例
     }
     }
     ;
