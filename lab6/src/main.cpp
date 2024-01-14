@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "common.h"
+#include "Type.h"
 #include "Ast.h"
 #include "Unit.h"
 #include "MachineCode.h"

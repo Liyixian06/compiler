@@ -39,10 +39,10 @@ void Node::unbackPatch(std::vector<Instruction*> &list, BasicBlock*bb)
     }
 }
 
-//合并两个list
-std::vector<BasicBlock**> Node::merge(std::vector<BasicBlock**> &list1, std::vector<BasicBlock**> &list2)
+// 合并两个list
+std::vector<Instruction*> Node::merge(std::vector<Instruction*> &list1, std::vector<Instruction*> &list2)
 {
-    std::vector<BasicBlock**> res(list1);
+    std::vector<Instruction*> res(list1);
     res.insert(res.end(), list2.begin(), list2.end());
     return res;
 }

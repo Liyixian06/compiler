@@ -18,12 +18,21 @@ public:
     bool isUncond() const {return instType == UNCOND;};
     bool isCond() const {return instType == COND;};
     bool isRet() const {return instType == RET;}
+    bool isAlloc() const {return instType == ALLOCA;}
     void setParent(BasicBlock *);
     void setNext(Instruction *);
     void setPrev(Instruction *);
     Instruction *getNext();
     Instruction *getPrev();
+    virtual Operand *getDef() { return nullptr; }
+    virtual std::vector<Operand *> getUse() { return {}; }
     virtual void output() const = 0;
+    MachineOperand* genMachineOperand(Operand*);
+    MachineOperand* genMachineReg(int reg);
+    MachineOperand* genMachineVReg();
+    MachineOperand* genMachineImm(int val);
+    MachineOperand* genMachineLabel(int block_no);
+    virtual void genMachineCode(AsmBuilder*) = 0;
 protected:
     unsigned instType;
     unsigned opcode;
@@ -40,6 +49,7 @@ class DummyInstruction : public Instruction
 public:
     DummyInstruction() : Instruction(-1, nullptr) {};
     void output() const {};
+    void genMachineCode(AsmBuilder *) {};
 };
 
 // 给变量分配空间，dst 为要分配的操作数
@@ -49,6 +59,7 @@ public:
     AllocaInstruction(Operand *dst, SymbolEntry *se, BasicBlock *insert_bb = nullptr);
     ~AllocaInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
 private:
     SymbolEntry *se; // 要分配空间的变量的表项
 };
@@ -60,6 +71,7 @@ public:
     GlobalAllocaInstruction(Operand *dst, SymbolEntry *se, Operand *value = nullptr, BasicBlock* insert_bb = nullptr);
     ~GlobalAllocaInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
 private:
     SymbolEntry *se;
     Operand *value; // 全局变量赋值
@@ -72,6 +84,7 @@ public:
     LoadInstruction(Operand *dst, Operand *src_addr, BasicBlock *insert_bb = nullptr);
     ~LoadInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
 };
 
 // 把src存到dst地址
@@ -81,6 +94,7 @@ public:
     StoreInstruction(Operand *dst_addr, Operand *src, BasicBlock *insert_bb = nullptr);
     ~StoreInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
 };
 
 class BinaryInstruction : public Instruction
@@ -89,6 +103,7 @@ public:
     BinaryInstruction(unsigned opcode, Operand *dst, Operand *src1, Operand *src2, BasicBlock *insert_bb = nullptr);
     ~BinaryInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
     enum {SUB, ADD, AND, OR, MUL, DIV, MOD};
 };
 
@@ -98,6 +113,7 @@ public:
     UnaryInstruction(unsigned opcode, Operand *dst, Operand *src, BasicBlock *insert_bb = nullptr);
     ~UnaryInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
     enum {ADD, SUB, NOT};
 };
 
@@ -107,6 +123,7 @@ public:
     CmpInstruction(unsigned opcode, Operand *dst, Operand *src1, Operand *src2, BasicBlock *insert_bb = nullptr);
     ~CmpInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
     enum {E, NE, L, GE, G, LE};
 };
 
@@ -116,6 +133,7 @@ class UncondBrInstruction : public Instruction
 public:
     UncondBrInstruction(BasicBlock*, BasicBlock *insert_bb = nullptr);
     void output() const;
+    void genMachineCode(AsmBuilder *);
     void setBranch(BasicBlock *);
     BasicBlock *getBranch();
 protected:
@@ -130,6 +148,7 @@ public:
     CondBrInstruction(BasicBlock*, BasicBlock*, Operand *, BasicBlock *insert_bb = nullptr);
     ~CondBrInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
     void setTrueBranch(BasicBlock*);
     BasicBlock* getTrueBranch();
     void setFalseBranch(BasicBlock*);
@@ -146,6 +165,7 @@ public:
     RetInstruction(Operand *src, BasicBlock *insert_bb = nullptr);
     ~RetInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
 };
 
 // 零扩展
@@ -155,6 +175,7 @@ public:
     ZextInstruction(Operand *dst, Operand *src, BasicBlock *insert_bb = nullptr);
     ~ZextInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
 };
 
 // 用于取反，!a = a xor 1
@@ -164,6 +185,7 @@ public:
     XorInstruction(Operand *dst, Operand *src, BasicBlock *insert_bb = nullptr);
     ~XorInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
 };
 
 // 函数调用
@@ -173,6 +195,7 @@ public:
     CallInstruction(Operand *dst, SymbolEntry *se, std::vector<Operand*> params = {}, BasicBlock *insert_bb = nullptr);
     ~CallInstruction();
     void output() const;
+    void genMachineCode(AsmBuilder *);
 private:
     Operand *dst; // 返回值赋值给这个变量（不一定有）
     SymbolEntry *func; // 函数入口

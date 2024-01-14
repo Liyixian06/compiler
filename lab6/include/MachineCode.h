@@ -32,7 +32,7 @@ private:
     int reg_no; // register no
     std::string label; // address label
 public:
-    enum { IMM, VREG, REG, LABEL };
+    enum { IMM, VREG, REG, LABEL }; // 立即数，虚拟寄存器，物理寄存器，地址标签
     MachineOperand(int tp, int val);
     MachineOperand(std::string label);
     bool operator == (const MachineOperand&) const;
@@ -75,12 +75,15 @@ public:
     std::vector<MachineOperand*>& getDef() {return def_list;};
     std::vector<MachineOperand*>& getUse() {return use_list;};
     MachineBlock* getParent() {return this->parent;};
+    bool isStack() { return type == STACK; };
+    bool isPOP() { return type == STACK && this->op == 1; }
+    bool isLoad() { return type == LOAD; };
 };
 
 class BinaryMInstruction : public MachineInstruction
 {
 public:
-    enum opType { ADD, SUB, MUL, DIV, AND, OR };
+    enum opType { ADD, SUB, MUL, DIV, MOD, AND, OR };
     BinaryMInstruction(MachineBlock* p, int op, 
                     MachineOperand* dst, MachineOperand* src1, MachineOperand* src2, 
                     int cond = MachineInstruction::NONE);
@@ -94,6 +97,9 @@ public:
     LoadMInstruction(MachineBlock* p,
                     MachineOperand* dst, MachineOperand* src1, MachineOperand* src2 = nullptr, 
                     int cond = MachineInstruction::NONE);
+    void setOff(int offset) {
+        use_list[1] = new MachineOperand(MachineOperand::IMM, use_list[1]->getVal() + offset);
+    }
     void output();
 };
 
@@ -141,8 +147,23 @@ class StackMInstrcuton : public MachineInstruction
 public:
     enum opType { PUSH, POP };
     StackMInstrcuton(MachineBlock* p, int op, 
-                MachineOperand* src,
+                std::vector<MachineOperand*> srcs,
                 int cond = MachineInstruction::NONE);
+    void setRegs(std::vector<MachineOperand *> regs) {
+        use_list.assign(regs.begin(), regs.end());
+    }
+    void output();
+};
+
+class GlobalMInstruction : public MachineInstruction
+{
+private:
+    SymbolEntry *se;
+public:
+    GlobalMInstruction(MachineBlock *p, MachineOperand *dst, std::vector<MachineOperand *> src, SymbolEntry *se);
+    // 前继输出
+    void frontoutput();
+    // 后续-桥接变量
     void output();
 };
 
@@ -153,8 +174,10 @@ private:
     int no;  
     std::vector<MachineBlock *> pred, succ;
     std::vector<MachineInstruction*> inst_list;
+    std::vector<MachineInstruction *> unsure_insts;
     std::set<MachineOperand*> live_in;
     std::set<MachineOperand*> live_out;
+    int cmpCond;
 public:
     std::vector<MachineInstruction*>& getInsts() {return inst_list;};
     std::vector<MachineInstruction*>::iterator begin() { return inst_list.begin(); };
@@ -165,10 +188,20 @@ public:
     void InsertInst(MachineInstruction* inst) { this->inst_list.push_back(inst); };
     void addPred(MachineBlock* p) { this->pred.push_back(p); };
     void addSucc(MachineBlock* s) { this->succ.push_back(s); };
+    void insertBefore(MachineInstruction *, MachineInstruction *);
+    void insertAfter(MachineInstruction *, MachineInstruction *);
+    void insertFront(MachineInstruction *inst) { this->inst_list.insert(inst_list.begin(), inst); };
+    void backPatch(std::vector<MachineOperand *>);
+    void eraseInst(MachineInstruction *inst)
+    {
+        this->inst_list.erase(find(inst_list.begin(), inst_list.end(), inst));
+    };
     std::set<MachineOperand*>& getLiveIn() {return live_in;};
     std::set<MachineOperand*>& getLiveOut() {return live_out;};
     std::vector<MachineBlock*>& getPreds() {return pred;};
     std::vector<MachineBlock*>& getSuccs() {return succ;};
+    int getCmpCond() const { return cmpCond; };
+    void setCmpCond(int cond) { cmpCond = cond; };
     void output();
 };
 
@@ -193,6 +226,7 @@ public:
     int AllocSpace(int size) { this->stack_size += size; return this->stack_size; };
     void InsertBlock(MachineBlock* block) { this->block_list.push_back(block); };
     void addSavedRegs(int regno) {saved_regs.insert(regno);};
+    std::vector<MachineOperand *> getSavedRegs();
     void output();
 };
 
@@ -200,12 +234,15 @@ class MachineUnit
 {
 private:
     std::vector<MachineFunction*> func_list;
+    std::vector<GlobalMInstruction*> global_list;
     void PrintGlobalDecl();
+    void PrintGlobalBridge();
 public:
     std::vector<MachineFunction*>& getFuncs() {return func_list;};
     std::vector<MachineFunction*>::iterator begin() { return func_list.begin(); };
     std::vector<MachineFunction*>::iterator end() { return func_list.end(); };
     void InsertFunc(MachineFunction* func) { func_list.push_back(func);};
+    void InsertGlobal(GlobalMInstruction* global) { global_list.push_back(global); };
     void output();
 };
 

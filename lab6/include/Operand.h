@@ -7,7 +7,6 @@
 class Instruction;
 class Function;
 
-
 // class Operand - The operand of an instruction. ²Ù×÷Êý
 class Operand
 {
@@ -29,6 +28,7 @@ public:
 
     use_iterator use_begin() {return uses.begin();};
     use_iterator use_end() {return uses.end();};
+    SymbolEntry* getSymbolEntry(){return se;}
     Type* getType() {return se->getType();};
     std::string toStr() const;
     SymbolEntry * getEntry() { return se; };

@@ -13,6 +13,7 @@ class Unit
 
 private:
     std::vector<Function *> func_list;
+    std::vector<Instruction *> global_list;
 public:
     Unit() = default;
     ~Unit() ;

@@ -41,6 +41,7 @@ public:
     reverse_iterator rend() { return block_list.rend(); };
     SymbolEntry *getSymPtr() { return sym_ptr; };
     void push_para(Operand* p) {params.push_back(p); };
+    void genMachineCode(AsmBuilder *);
 };
 
 #endif
