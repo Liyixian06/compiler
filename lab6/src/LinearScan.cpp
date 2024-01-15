@@ -246,61 +246,73 @@ void LinearScan::genSpillCode()
          * 2. insert str inst after the def of vreg
          */ 
 
-        // 为间隔分配一个在堆栈上的新位置，负号以FP寄存器为基准
+        //获取栈内相对偏移
+        //注意要是负的 以FP为基准
         interval->disp = -func->AllocSpace(4);
-        // 获取偏移和FP寄存器的值
+        //获取偏移和FP寄存器的值
         auto off = new MachineOperand(MachineOperand::IMM, interval->disp);
         auto fp = new MachineOperand(MachineOperand::REG, 11);
-
-        // 遍历use，处理加入load指令
         for (auto use : interval->uses) {
+             //在use之前插入load指令 将其从栈内加载到目的虚拟寄存器中
             auto temp = new MachineOperand(*use);
             MachineOperand* operand = nullptr;
-
-            // 如果偏移大于255或小于-255，则创建一个新的虚拟寄存器
+            // Todo:insert ldr and str
+            //auto cur_func=func;
+            //MachineInstruction* cur_inst=nullptr;
+            //MachineBlock* cur_block;
+            //int offset = cur_func->AllocSpace(4);
+            //首先判断当前数据地址是否超过寻址空间 
+            //超出寻址空间 不能直接加载 要分两步
+            //首先加载到虚拟寄存器 ldr v1,off
             if (interval->disp > 255 || interval->disp < -255) {
-                operand = new MachineOperand(MachineOperand::VREG, SymbolTable::getLabel());
-                auto inst1 = new LoadMInstruction(use->getParent()->getParent(), operand, off);
-                use->getParent()->insertBefore(inst1);
+                operand = new MachineOperand(MachineOperand::VREG,
+                                             SymbolTable::getLabel());
+                auto src1 = new LoadMInstruction(use->getParent()->getParent(),
+                                                  operand, off);
+                //USE指令前插入Load指令
+                use->getParent()->insertBefore(src1);
             }
-
-            // 插入加载指令（ldr）
+            //超出寻址空间的话 第二步ldr r0,[fp,v1]
             if (operand) {
-                auto inst = new LoadMInstruction(use->getParent()->getParent(), temp, fp, new MachineOperand(*operand));
-                use->getParent()->insertBefore(inst);
-            } 
-            else {
-                auto inst = new LoadMInstruction(use->getParent()->getParent(), temp, fp, off);
-                use->getParent()->insertBefore(inst);
+                auto src =
+                    new LoadMInstruction(use->getParent()->getParent(), temp,
+                                         fp, new MachineOperand(*operand));
+                use->getParent()->insertBefore(src);
+            } else {
+                //正常情况，直接从fp-off的地方加载
+                auto src = new LoadMInstruction(use->getParent()->getParent(),
+                                                 temp, fp, off);
+                use->getParent()->insertBefore(src);
             }
         }
-
-        // 处理定义该间隔的每个指令
+        //遍历其 DEF 指令的列表，
+        //在 DEF 指令后插入 StoreMInstruction，将其从目前的虚拟寄存器中
+        //存到栈内
         for (auto def : interval->defs) {
+             //在def之后插入store指令
             auto temp = new MachineOperand(*def);
             MachineOperand* operand = nullptr;
-            MachineInstruction *inst1 = nullptr, *inst = nullptr;
-
-            // 如果偏移大于255或小于-255，则创建一个新的虚拟寄存器
+            MachineInstruction *src1 = nullptr, *src = nullptr;
+             //同样要考虑寻址空间
             if (interval->disp > 255 || interval->disp < -255) {
-                operand = new MachineOperand(MachineOperand::VREG, SymbolTable::getLabel());
-                inst1 = new LoadMInstruction(def->getParent()->getParent(), operand, off);
-                def->getParent()->insertAfter(inst1);
+                operand = new MachineOperand(MachineOperand::VREG,
+                                             SymbolTable::getLabel());
+                src1 = new LoadMInstruction(def->getParent()->getParent(),
+                                             operand, off);
+                def->getParent()->insertAfter(src1);
             }
-
-            // 插入存储指令（str）
-            if (operand) {
-                auto inst = new StoreMInstruction(def->getParent()->getParent(), temp, fp, new MachineOperand(*operand));
-            } 
-            else {
-                auto inst = new StoreMInstruction(def->getParent()->getParent(), temp, fp, off);
-            }
-
-            // 将存储指令插入到定义指令的后面
-            if (inst1)
-                inst1->insertAfter(inst);
+            //StoreMInstruction要插入DEF指令之后
+            if (operand)
+                src =
+                    new StoreMInstruction(def->getParent()->getParent(), temp,
+                                          fp, new MachineOperand(*operand));
             else
-                def->getParent()->insertAfter(inst);
+                src = new StoreMInstruction(def->getParent()->getParent(),
+                                             temp, fp, off);
+            if (src1)
+                src1->insertAfter(src);
+            else
+                def->getParent()->insertAfter(src);
         }
     }
 }
