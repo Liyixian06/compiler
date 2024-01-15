@@ -29,7 +29,7 @@ void LinearScan::allocateRegisters()
     }
 }
 
-void LinearScan::makeDuChains()
+void LinearScan::makeDuChains() // 构建Def-Use链
 {
     LiveVariableAnalysis lva;
     lva.pass(func);
@@ -45,110 +45,135 @@ void LinearScan::makeDuChains()
         no = i = bb->getInsts().size() + i;
         for (auto inst = bb->getInsts().rbegin(); inst != bb->getInsts().rend(); inst++)
         {
-            (*inst)->setNo(no--);
+            (*inst)->setNo(no--);  // 逆序遍历基本块指令
             for (auto &def : (*inst)->getDef())
             {
                 if (def->isVReg())
                 {
-                    auto &uses = liveVar[*def];
+                    auto &uses = liveVar[*def]; // 获取当前定义对应的活跃变量集合
                     du_chains[def].insert(uses.begin(), uses.end());
-                    auto &kill = lva.getAllUses()[*def];
-                    std::set<MachineOperand *> res;
-                    set_difference(uses.begin(), uses.end(), kill.begin(), kill.end(), inserter(res, res.end()));
-                    liveVar[*def] = res;
+                    auto &kill = lva.getAllUses()[*def];  // 获取当前定义对应的被杀死的变量集合
+                    std::set<MachineOperand *> res; 
+                    set_difference(uses.begin(), uses.end(), kill.begin(), kill.end(), inserter(res, res.end()));  // 计算差集，得到新的活跃变量集合
+                    liveVar[*def] = res;  // 更新liveVar
                 }
             }
             for (auto &use : (*inst)->getUse())
             {
                 if (use->isVReg())
-                    liveVar[*use].insert(use);
+                    liveVar[*use].insert(use);  // 将使用的变量加入liveVar中
             }
         }
     }
 }
 
-void LinearScan::computeLiveIntervals()
-{
+void LinearScan::computeLiveIntervals() {
     makeDuChains();
     intervals.clear();
-    for (auto &du_chain : du_chains)
-    {
-        int t = -1;
-        for (auto &use : du_chain.second)
-            t = std::max(t, use->getParent()->getNo());
-        Interval *interval = new Interval({du_chain.first->getParent()->getNo(), t, false, 0, 0, {du_chain.first}, du_chain.second});
+
+    // Step 1: 遍历Def-Use链，为每个虚拟寄存器创建Interval对象
+    for (const auto& du_chain : du_chains) {
+        int maxUseNo = -1;
+
+        // 找到使用点的最大序号
+        for (const auto& use : du_chain.second)
+            maxUseNo = std::max(maxUseNo, use->getParent()->getNo());
+
+        // 创建 Interval 对象
+        Interval* interval = new Interval{
+            du_chain.first->getParent()->getNo(),  // start
+            maxUseNo,                               // end
+            false,                                  // spill
+            0,                                      // disp
+            0,                                      // rreg
+            {du_chain.first},                       // defs
+            du_chain.second                         // uses
+        };
+
         intervals.push_back(interval);
     }
+
+    // Step 2: 处理每个 Interval 对象的使用点
     for (auto& interval : intervals) {
         auto uses = interval->uses;
-        auto begin = interval->start;
-        auto end = interval->end;
-        for (auto block : func->getBlocks()) {
+        auto& begin = interval->start;
+        auto& end = interval->end;
+
+        // 遍历基本块
+        for (const auto& block : func->getBlocks()) {
             auto liveIn = block->getLiveIn();
             auto liveOut = block->getLiveOut();
             bool in = false;
             bool out = false;
-            for (auto use : uses)
+
+            // 判断是否在入口和出口活跃
+            for (const auto& use : uses)
                 if (liveIn.count(use)) {
                     in = true;
                     break;
                 }
-            for (auto use : uses)
+
+            for (const auto& use : uses)
                 if (liveOut.count(use)) {
                     out = true;
                     break;
                 }
+
+            // 更新 begin 和 end
             if (in && out) {
                 begin = std::min(begin, (*(block->begin()))->getNo());
                 end = std::max(end, (*(block->rbegin()))->getNo());
             } else if (!in && out) {
-                for (auto i : block->getInsts())
-                    if (i->getDef().size() > 0 &&
-                        i->getDef()[0] == *(uses.begin())) {
-                        begin = std::min(begin, i->getNo());
+                for (const auto& inst : block->getInsts())
+                    if (inst->getDef().size() > 0 &&
+                        inst->getDef()[0] == *(uses.begin())) {
+                        begin = std::min(begin, inst->getNo());
                         break;
                     }
                 end = std::max(end, (*(block->rbegin()))->getNo());
             } else if (in && !out) {
                 begin = std::min(begin, (*(block->begin()))->getNo());
                 int temp = 0;
-                for (auto use : uses)
+
+                for (const auto& use : uses)
                     if (use->getParent()->getParent() == block)
                         temp = std::max(temp, use->getParent()->getNo());
+
                 end = std::max(temp, end);
             }
         }
-        interval->start = begin;
-        interval->end = end;
     }
-    bool change;
-    change = true;
-    while (change)
-    {
+
+    // Step 3: 合并相交的活跃区间
+    bool change = true;
+    while (change) {
         change = false;
-        std::vector<Interval *> t(intervals.begin(), intervals.end());
-        for (size_t i = 0; i < t.size(); i++)
-            for (size_t j = i + 1; j < t.size(); j++)
-            {
-                Interval *w1 = t[i];
-                Interval *w2 = t[j];
-                if (**w1->defs.begin() == **w2->defs.begin())
-                {
-                    std::set<MachineOperand *> temp;
-                    set_intersection(w1->uses.begin(), w1->uses.end(), w2->uses.begin(), w2->uses.end(), inserter(temp, temp.end()));
-                    if (!temp.empty())
-                    {
+        std::vector<Interval*> temp(intervals.begin(), intervals.end());
+
+        for (size_t i = 0; i < temp.size(); i++)
+            for (size_t j = i + 1; j < temp.size(); j++) {
+                Interval* w1 = temp[i];
+                Interval* w2 = temp[j];
+
+                if (**w1->defs.begin() == **w2->defs.begin()) {
+                    std::set<MachineOperand*> commonUses;
+                    set_intersection(w1->uses.begin(), w1->uses.end(),
+                                     w2->uses.begin(), w2->uses.end(),
+                                     inserter(commonUses, commonUses.end()));
+
+                    if (!commonUses.empty()) {
                         change = true;
                         w1->defs.insert(w2->defs.begin(), w2->defs.end());
                         w1->uses.insert(w2->uses.begin(), w2->uses.end());
-                        // w1->start = std::min(w1->start, w2->start);
-                        // w1->end = std::max(w1->end, w2->end);
+
                         auto w1Min = std::min(w1->start, w1->end);
                         auto w1Max = std::max(w1->start, w1->end);
                         auto w2Min = std::min(w2->start, w2->end);
                         auto w2Max = std::max(w2->start, w2->end);
+
                         w1->start = std::min(w1Min, w2Min);
                         w1->end = std::max(w1Max, w2Max);
+
                         auto it = std::find(intervals.begin(), intervals.end(), w2);
                         if (it != intervals.end())
                             intervals.erase(it);
@@ -156,6 +181,8 @@ void LinearScan::computeLiveIntervals()
                 }
             }
     }
+
+    // Step 4: 按照起始位置排序
     sort(intervals.begin(), intervals.end(), compareStart);
 }
 
@@ -205,6 +232,7 @@ void LinearScan::modifyCode()
     }
 }
 
+// 补充store和load命令，溢出代码生成
 void LinearScan::genSpillCode()
 {
     for(auto &interval:intervals)
@@ -218,8 +246,9 @@ void LinearScan::genSpillCode()
          * 2. insert str inst after the def of vreg
          */ 
 
-        // 为间隔分配一个在堆栈上的新位置
+        // 为间隔分配一个在堆栈上的新位置，负号以FP寄存器为基准
         interval->disp = -func->AllocSpace(4);
+        // 获取偏移和FP寄存器的值
         auto off = new MachineOperand(MachineOperand::IMM, interval->disp);
         auto fp = new MachineOperand(MachineOperand::REG, 11);
 
