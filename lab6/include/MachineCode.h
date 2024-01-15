@@ -83,7 +83,7 @@ public:
 class BinaryMInstruction : public MachineInstruction
 {
 public:
-    enum opType { ADD, SUB, MUL, DIV, MOD, AND, OR };
+    enum opType { ADD, SUB, MUL, DIV, AND, OR };
     BinaryMInstruction(MachineBlock* p, int op, 
                     MachineOperand* dst, MachineOperand* src1, MachineOperand* src2, 
                     int cond = MachineInstruction::NONE);
@@ -162,7 +162,7 @@ private:
 public:
     GlobalMInstruction(MachineBlock *p, MachineOperand *dst, std::vector<MachineOperand *> src, SymbolEntry *se);
     // 前继输出
-    void frontoutput();
+    void output_decl();
     // 后续-桥接变量
     void output();
 };
@@ -203,6 +203,7 @@ public:
     int getCmpCond() const { return cmpCond; };
     void setCmpCond(int cond) { cmpCond = cond; };
     void output();
+    MachineFunction* getParent() { return this->parent; }
 };
 
 class MachineFunction
@@ -227,6 +228,8 @@ public:
     void InsertBlock(MachineBlock* block) { this->block_list.push_back(block); };
     void addSavedRegs(int regno) {saved_regs.insert(regno);};
     std::vector<MachineOperand *> getSavedRegs();
+    SymbolEntry* getSymbol() { return this->sym_ptr; }
+    MachineUnit* getParent() { return this->parent; }
     void output();
 };
 
@@ -237,6 +240,7 @@ private:
     std::vector<GlobalMInstruction*> global_list;
     void PrintGlobalDecl();
     void PrintGlobalBridge();
+    int global_num;
 public:
     std::vector<MachineFunction*>& getFuncs() {return func_list;};
     std::vector<MachineFunction*>::iterator begin() { return func_list.begin(); };
@@ -244,6 +248,7 @@ public:
     void InsertFunc(MachineFunction* func) { func_list.push_back(func);};
     void InsertGlobal(GlobalMInstruction* global) { global_list.push_back(global); };
     void output();
+    int get_global_num() const { return global_num; }
 };
 
 #endif

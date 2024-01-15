@@ -48,7 +48,6 @@ void MachineOperand::PrintReg()
 {
     switch (reg_no)
     {
-    // TODO
     case 11:
         fprintf(yyout, "fp");
         break;
@@ -56,7 +55,7 @@ void MachineOperand::PrintReg()
         fprintf(yyout, "sp");
         break;
     case 14:
-        fprintf(yyout, "lr");
+        fprintf(yyout, "lr"); // link register，保存函数返回地址
         break;
     case 15:
         fprintf(yyout, "pc");
@@ -156,9 +155,6 @@ void BinaryMInstruction::output()
         break;
     case BinaryMInstruction::DIV:
         fprintf(yyout, "\tsdiv ");
-        break;
-    case BinaryMInstruction::MOD:
-        //TODO
         break;
     default:
         break;
@@ -392,7 +388,7 @@ GlobalMInstruction::GlobalMInstruction(MachineBlock *p, MachineOperand *dst, std
     }
 };
 
-void GlobalMInstruction::frontoutput()
+void GlobalMInstruction::output_decl()
 {
     fprintf(yyout, "\t.global %s\n", def_list[0]->getLabel().c_str());
     fprintf(yyout, "\t.align 4\n");
@@ -467,7 +463,6 @@ void MachineFunction::output()
     fprintf(yyout, "\t.global %s\n", func_name);
     fprintf(yyout, "\t.type %s , %%function\n", func_name);
     fprintf(yyout, "%s:\n", func_name);
-    // TODO
     /* Hint:
     *  1. Save fp
     *  2. fp = sp
@@ -478,17 +473,18 @@ void MachineFunction::output()
     MachineBlock* entry = this->block_list[0];
     auto fp = new MachineOperand(MachineOperand::REG, 11);
     auto sp = new MachineOperand(MachineOperand::REG, 13);
+    auto lr = new MachineOperand(MachineOperand::REG, 14);
     std::vector<MachineOperand*> saved_regs = this->getSavedRegs();
     (new StackMInstrcuton(entry, StackMInstrcuton::PUSH, saved_regs))->output();
     (new MovMInstruction(entry, MovMInstruction::MOV, fp, sp))->output();
+    // 用 SUB 指令为局部变量生成栈内空间（实际栈内空间大小已知）
+    // SUB 只能操作 8 位立即数，需要分段处理
     int stackSize = stack_size;
     auto stSize = new MachineOperand(MachineOperand::IMM, stackSize);
     if (AsmBuilder::is_imm_legal(stackSize))
         (new BinaryMInstruction(entry, BinaryMInstruction::SUB, sp, sp, stSize))->output();
     else
     {
-        // 如果直接用SUB，会出现错误，因为SUB只能操作8位的立即数，所以要分段。
-        // 分成4个字节，每次减去一个字节
         if (stackSize & 0xff)
             (new BinaryMInstruction(entry, BinaryMInstruction::SUB, sp, sp, new MachineOperand(MachineOperand::IMM, stackSize & 0xff)))->output();
         if (stackSize & 0xff00)
@@ -503,25 +499,24 @@ void MachineFunction::output()
         iter->backPatch(saved_regs);
         iter->output();
     }
+    fprintf(yyout, "\n");
 }
 
 void MachineUnit::PrintGlobalDecl()
 {
-    // TODO:
     // You need to print global variable/const declarition code;
-    for (auto inst : global_list)
-        inst->frontoutput();
+    for (auto global : global_list)
+        global->output_decl();
 }
 
 void MachineUnit::PrintGlobalBridge()
 {
-    for (auto inst : global_list)
-        inst->output();
+    for (auto global : global_list)
+        global->output();
 }
 
 void MachineUnit::output()
 {
-    // TODO
     /* Hint:
     * 1. You need to print global variable/const declarition code;
     * 2. Traverse all the function in func_list to print assembly code;

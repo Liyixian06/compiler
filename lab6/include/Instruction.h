@@ -149,10 +149,12 @@ public:
     ~CondBrInstruction();
     void output() const;
     void genMachineCode(AsmBuilder *);
+    enum {E, NE, L, GE, G, LE};
     void setTrueBranch(BasicBlock*);
     BasicBlock* getTrueBranch();
     void setFalseBranch(BasicBlock*);
     BasicBlock* getFalseBranch();
+    void setOp(int op) { opcode = op; }
 protected:
     BasicBlock* true_branch;
     BasicBlock* false_branch;
