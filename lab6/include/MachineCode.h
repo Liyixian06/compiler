@@ -136,7 +136,7 @@ class CmpMInstruction : public MachineInstruction
 {
 public:
     enum opType { CMP };
-    CmpMInstruction(MachineBlock* p, 
+    CmpMInstruction(MachineBlock* p, int op = CMP,
                 MachineOperand* src1, MachineOperand* src2, 
                 int cond = MachineInstruction::NONE);
     void output();

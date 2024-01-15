@@ -87,7 +87,7 @@ void MachineOperand::output()
     case LABEL:
         if (this->label.substr(0, 2) == ".L") // 标签
             fprintf(yyout, "%s", this->label.c_str());
-        else if (this->label.substr(0, 1) == "@")
+        else if (this->label.substr(0, 1) == "@") // 函数
             fprintf(yyout, "%s", this->label.c_str() + 1);
         else // 变量
             fprintf(yyout, "addr_%s", this->label.c_str());
@@ -310,12 +310,13 @@ void BranchMInstruction::output()
     fprintf(yyout, "\n");
 }
 
-CmpMInstruction::CmpMInstruction(MachineBlock* p, 
+CmpMInstruction::CmpMInstruction(MachineBlock* p, int op, 
     MachineOperand* src1, MachineOperand* src2, 
     int cond)
 {
     this->parent = p;
     this->type = MachineInstruction::CMP;
+    this->op = op;
     this->cond = cond;
     p->setCmpCond(cond);
     this->use_list.push_back(src1);

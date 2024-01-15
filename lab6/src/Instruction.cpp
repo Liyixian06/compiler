@@ -555,6 +555,13 @@ void AllocaInstruction::genMachineCode(AsmBuilder* builder)
 void GlobalAllocaInstruction::genMachineCode(AsmBuilder* builder)
 {
     //TODO
+    auto cur_block = builder->getBlock();
+    auto cur_unit = builder->getUnit();
+    MachineInstruction *cur_inst = 0;
+    auto dst = genMachineOperand(operands[0]);
+    if(value){
+        
+    }
 }
 
 void LoadInstruction::genMachineCode(AsmBuilder* builder)
@@ -699,7 +706,33 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder)
 
 void UnaryInstruction::genMachineCode(AsmBuilder* builder)
 {
-    //TODO
+    auto cur_block = builder->getBlock();
+    auto dst = genMachineOperand(operands[0]);
+    auto src = genMachineOperand(operands[1]);
+    MachineInstruction* cur_inst = nullptr;
+    auto internal_reg = genMachineVReg();
+    cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, internal_reg, genMachineImm(0));
+    cur_block->InsertInst(cur_inst);
+    MachineOperand* imm_0 = new MachineOperand(*internal_reg);
+    if(src->isImm())
+    {
+        auto internal_reg = genMachineVReg();
+        cur_inst = new LoadMInstruction(cur_block, internal_reg, src);
+        cur_block->InsertInst(cur_inst);
+        src = new MachineOperand(*internal_reg);
+    }
+    switch (opcode)
+    {
+    case ADD:
+        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD, dst, imm_0, src);
+        break;
+    case SUB:
+        cur_inst = new BinaryMInstruction(cur_block, BinaryInstruction::SUB, dst, imm_0, src);
+        break;
+    default:
+        break;
+    }
+    cur_block->InsertInst(cur_inst);
 }
 
 void CmpInstruction::genMachineCode(AsmBuilder* builder)
@@ -723,7 +756,7 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder)
         cur_block->InsertInst(cur_inst);
         src2 = new MachineOperand(*internal_reg);
     }
-    cur_inst = new CmpMInstruction(cur_block, src1, src2);
+    cur_inst = new CmpMInstruction(cur_block, CmpMInstruction::CMP, src1, src2);
     cur_block->InsertInst(cur_inst);
 
     CondBrInstruction *nxt_cond = dynamic_cast<CondBrInstruction *>(this->getNext());
@@ -879,24 +912,97 @@ void CondBrInstruction::genMachineCode(AsmBuilder* builder)
 
 void RetInstruction::genMachineCode(AsmBuilder* builder)
 {
-    // TODO
     /* HINT:
     * 1. Generate mov instruction to save return value in r0
     * 2. Restore callee saved registers and sp, fp
     * 3. Generate bx instruction */
+    auto bb = builder->getBlock();
+    if (!operands.empty())
+    {
+        auto dst = genMachineReg(0);
+        auto src = genMachineOperand(operands[0]);
+        // 保存返回值
+        bb->InsertInst(new MovMInstruction(bb, MovMInstruction::MOV, dst, src));
+    }
+
+    // 恢复栈帧
+    bb->InsertInst(new BinaryMInstruction(bb, BinaryMInstruction::SUB, genMachineReg(13), genMachineReg(11), genMachineImm(0)));
+    // 跳转指令返回 Caller
+    bb->InsertInst(new BranchMInstruction(bb, BranchMInstruction::BX, genMachineReg(14)));
 }
 
 void ZextInstruction::genMachineCode(AsmBuilder* builder)
 {
-    //TODO
+    auto cur_block = builder->getBlock();
+    auto dst = genMachineOperand(operands[0]);
+    auto src = genMachineOperand(operands[1]);
+    MachineInstruction *cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst, src);
+    cur_block->InsertInst(cur_inst);
 }
 
 void XorInstruction::genMachineCode(AsmBuilder* builder)
 {
-    //TODO
+    MachineBlock *cur_block = builder->getBlock();
+    MovMInstruction *cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, genMachineOperand(operands[0]), genMachineImm(1), MachineInstruction::EQ);
+    cur_block->InsertInst(cur_inst);
+    cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, genMachineOperand(operands[0]), genMachineImm(0), MachineInstruction::NE);
+    cur_block->InsertInst(cur_inst);
 }
 
 void CallInstruction::genMachineCode(AsmBuilder* builder)
 {
-    //TODO
+    auto cur_block = builder->getBlock();
+    MachineInstruction *cur_inst = 0;
+
+    for (unsigned int i = 1; i < operands.size(); i++)
+    {
+        // 参数值传递按顺序存放在寄存器r0,r1,r2,r3里，超过4个参数值传递则放栈里
+        // r0用于存放返回值
+        if (i > 4)
+        {
+            auto reg1 = genMachineVReg();
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, reg1, genMachineOperand(operands[i]));
+            cur_block->InsertInst(cur_inst);
+            cur_inst = new StoreMInstruction(cur_block, reg1, genMachineReg(13), genMachineImm(-(operands.size() - i) * 4));
+            cur_block->InsertInst(cur_inst);
+            builder->getFunction()->AllocSpace(4);
+
+            continue;
+        }
+        else
+        {
+            // auto reg1 = genMachineVReg();
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, genMachineReg(i - 1), genMachineOperand(operands[i]));
+            cur_block->InsertInst(cur_inst);
+        }
+    }
+    if (operands.size() > 5)
+    {
+        cur_inst = new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, genMachineReg(13), genMachineReg(13), genMachineImm((operands.size() - 5) * 4));
+        cur_block->InsertInst(cur_inst);
+    }
+    // example:  bl func
+    std::string label = dynamic_cast<IdentifierSymbolEntry *>(this->getEntry())->get_name();
+    auto dst = new MachineOperand(label);
+    cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::BL, dst);
+    cur_block->InsertInst(cur_inst);
+
+    if (operands.size() > 5)
+    {
+        auto off = genMachineImm((operands.size() - 5) * 4);
+        auto sp = new MachineOperand(MachineOperand::REG, 13);
+        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
+                                          sp, sp, off);
+        cur_block->InsertInst(cur_inst);
+    }
+
+    // save the return value
+    if (dynamic_cast<FunctionType *>(this->getEntry()->getType())->getRetType()->toStr() != "void")
+    {
+        auto ret = genMachineOperand(operands[0]);
+        // r0存储函数返回值
+        auto r0 = genMachineReg(0);
+        cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, ret, r0);
+        cur_block->InsertInst(cur_inst);
+    }
 }

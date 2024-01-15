@@ -198,6 +198,7 @@ public:
     ~CallInstruction();
     void output() const;
     void genMachineCode(AsmBuilder *);
+    SymbolEntry* getEntry() { return this->func; }
 private:
     Operand *dst; // 返回值赋值给这个变量（不一定有）
     SymbolEntry *func; // 函数入口
