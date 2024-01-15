@@ -96,6 +96,7 @@ void MachineOperand::output()
     }
 }
 
+
 void MachineInstruction::PrintCond()
 {
     switch (cond)
@@ -122,6 +123,19 @@ void MachineInstruction::PrintCond()
         break;
     }
 }
+
+void MachineInstruction::insertBefore(MachineInstruction* inst) {
+    auto& instructions = parent->getInsts();
+    auto it = std::find(instructions.begin(), instructions.end(), this);
+    instructions.insert(it, inst);
+}
+
+void MachineInstruction::insertAfter(MachineInstruction* inst) {
+    auto& instructions = parent->getInsts();
+    auto it = std::find(instructions.begin(), instructions.end(), this);
+    instructions.insert(++it, inst);
+}
+
 
 BinaryMInstruction::BinaryMInstruction(
     MachineBlock* p, int op, 

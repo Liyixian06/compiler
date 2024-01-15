@@ -161,7 +161,7 @@ void LinearScan::computeLiveIntervals()
 
 bool LinearScan::linearScanRegisterAllocation()
 {
-    // Todo
+    // _Todo
     /*
         active ←{}
         foreach live interval i, in order of increasing start point
@@ -172,8 +172,25 @@ bool LinearScan::linearScanRegisterAllocation()
                 register[i] ← a register removed from pool of free registers
                 add i to active, sorted by increasing end point
     */
+   bool success = true;
+    active.clear();
+    regs.clear();
+    for (int i = 4; i < 11; i++)
+        regs.push_back(i);
 
-    return true;
+    for (auto& i : intervals) {
+        expireOldIntervals(i);
+        if (regs.empty()) {
+            spillAtInterval(i);
+            success = false;
+        } else {
+            i->rreg = regs.front();
+            regs.erase(regs.begin());
+            active.push_back(i);
+            sort(active.begin(), active.end(), compareEnd);
+        }
+    }
+    return success;
 }
 
 void LinearScan::modifyCode()
@@ -194,18 +211,74 @@ void LinearScan::genSpillCode()
     {
         if(!interval->spill)
             continue;
-        // TODO
+        // _TODO
         /* HINT:
          * The vreg should be spilled to memory.
          * 1. insert ldr inst before the use of vreg
          * 2. insert str inst after the def of vreg
          */ 
+
+        // 为间隔分配一个在堆栈上的新位置
+        interval->disp = -func->AllocSpace(4);
+        auto off = new MachineOperand(MachineOperand::IMM, interval->disp);
+        auto fp = new MachineOperand(MachineOperand::REG, 11);
+
+        // 遍历use，处理加入load指令
+        for (auto use : interval->uses) {
+            auto temp = new MachineOperand(*use);
+            MachineOperand* operand = nullptr;
+
+            // 如果偏移大于255或小于-255，则创建一个新的虚拟寄存器
+            if (interval->disp > 255 || interval->disp < -255) {
+                operand = new MachineOperand(MachineOperand::VREG, SymbolTable::getLabel());
+                auto inst1 = new LoadMInstruction(use->getParent()->getParent(), operand, off);
+                use->getParent()->insertBefore(inst1);
+            }
+
+            // 插入加载指令（ldr）
+            if (operand) {
+                auto inst = new LoadMInstruction(use->getParent()->getParent(), temp, fp, new MachineOperand(*operand));
+                use->getParent()->insertBefore(inst);
+            } 
+            else {
+                auto inst = new LoadMInstruction(use->getParent()->getParent(), temp, fp, off);
+                use->getParent()->insertBefore(inst);
+            }
+        }
+
+        // 处理定义该间隔的每个指令
+        for (auto def : interval->defs) {
+            auto temp = new MachineOperand(*def);
+            MachineOperand* operand = nullptr;
+            MachineInstruction *inst1 = nullptr, *inst = nullptr;
+
+            // 如果偏移大于255或小于-255，则创建一个新的虚拟寄存器
+            if (interval->disp > 255 || interval->disp < -255) {
+                operand = new MachineOperand(MachineOperand::VREG, SymbolTable::getLabel());
+                inst1 = new LoadMInstruction(def->getParent()->getParent(), operand, off);
+                def->getParent()->insertAfter(inst1);
+            }
+
+            // 插入存储指令（str）
+            if (operand) {
+                auto inst = new StoreMInstruction(def->getParent()->getParent(), temp, fp, new MachineOperand(*operand));
+            } 
+            else {
+                auto inst = new StoreMInstruction(def->getParent()->getParent(), temp, fp, off);
+            }
+
+            // 将存储指令插入到定义指令的后面
+            if (inst1)
+                inst1->insertAfter(inst);
+            else
+                def->getParent()->insertAfter(inst);
+        }
     }
 }
 
 void LinearScan::expireOldIntervals(Interval *interval)
 {
-    // Todo
+    // _Todo
     /*
         foreach interval j in active, in order of increasing end point
             if endpoint[j] ≥ startpoint[i] then
@@ -213,11 +286,23 @@ void LinearScan::expireOldIntervals(Interval *interval)
             remove j from active
             add register[j] to pool of free registers
     */
+    auto it = active.begin();
+    //查看active中是否有结束时间早于interval起始时间
+    //active按照end时间升序排列，所以只用看头部
+    //头部如果大于 那么直接返回
+    //头部小于 那么active的寄存器可以回收
+    while (it != active.end()) {
+        if ((*it)->end >= interval->start)
+            return;
+        regs.push_back((*it)->rreg);
+        it = active.erase(find(active.begin(), active.end(), *it));
+        sort(regs.begin(), regs.end());
+    }
 }
 
 void LinearScan::spillAtInterval(Interval *interval)
 {
-    // Todo
+    // _Todo
     /*
         spill ← last interval in active
         if endpoint[spill] > endpoint[i] then
@@ -229,9 +314,27 @@ void LinearScan::spillAtInterval(Interval *interval)
             location[i] ← new stack location
 
     */
+
+   auto spill = active.back();  // 都被占用，选择active列表末尾与当前unhandled的一个溢出到栈中
+    if (spill->end > interval->end) { // 将结束时间更晚的溢出
+        spill->spill = true;  // 置位
+        interval->rreg = spill->rreg;  // 重新分配
+        active.push_back(interval);  // 再按照 unhandled interval活跃区间结束位置，将其插入到 active 列表中
+        sort(active.begin(), active.end(), compareEnd);  // 插入后再次按照结束时间对活跃区间进行排序
+    } 
+    else {
+        // unhandle溢出更晚只需置位spill标志位
+        interval->spill = true;
+    }
 }
 
 bool LinearScan::compareStart(Interval *a, Interval *b)
 {
     return a->start < b->start;
 }
+
+
+bool LinearScan::compareEnd(Interval* a, Interval* b) {
+    return a->end < b->end;
+}
+

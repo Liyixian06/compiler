@@ -74,6 +74,10 @@ public:
     int getNo() {return no;};
     std::vector<MachineOperand*>& getDef() {return def_list;};
     std::vector<MachineOperand*>& getUse() {return use_list;};
+    // insertbefore
+    void insertBefore(MachineInstruction* inst);
+    //insertafter
+    void insertAfter(MachineInstruction* inst);
     MachineBlock* getParent() {return this->parent;};
     bool isStack() { return type == STACK; };
     bool isPOP() { return type == STACK && this->op == 1; }

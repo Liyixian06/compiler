@@ -560,7 +560,10 @@ void GlobalAllocaInstruction::genMachineCode(AsmBuilder* builder)
     MachineInstruction *cur_inst = 0;
     auto dst = genMachineOperand(operands[0]);
     if(value){
-        
+        // 处理有值的情况，加载全局分配的值到目的机器操作数
+        auto src = genMachineOperand(value);
+        cur_inst = new LoadMInstruction(cur_block, dst, src);
+        cur_block->InsertInst(cur_inst);
     }
 }
 
@@ -626,6 +629,52 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder)
 void StoreInstruction::genMachineCode(AsmBuilder* builder)
 {
     // TODO
+    auto cur_block = builder->getBlock();
+    MachineInstruction* cur_inst = nullptr;
+
+    MachineOperand* dst = nullptr;
+    MachineOperand* src = nullptr;
+
+    dst = genMachineOperand(operands[0]);
+    src = genMachineOperand(operands[1]);
+
+    // store immediate
+    if (operands[1]->getEntry()->isConstant()) {
+        auto dst1 = genMachineVReg();
+        cur_inst = new LoadMInstruction(cur_block, dst1, src);
+        cur_block->InsertInst(cur_inst);
+        src = new MachineOperand(*dst1);
+    }
+
+    // store to local
+    if (operands[0]->getEntry()->isTemporary() && operands[0]->getDef() &&
+        operands[0]->getDef()->isAlloc()) {
+        auto src1 = genMachineReg(11);
+        int off = dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())
+                      ->getOffset();
+        auto src2 = genMachineImm(off);
+        if (off > 255 || off < -255) {
+            auto operand = genMachineVReg();
+            cur_block->InsertInst((new LoadMInstruction(
+                cur_block, operand, src2)));
+            src2 = operand;
+        }
+        cur_inst = new StoreMInstruction(cur_block, src, src1, src2);
+        cur_block->InsertInst(cur_inst);
+    }
+
+    // store to global
+    else if (operands[0]->getEntry()->isVariable() &&
+             dynamic_cast<IdentifierSymbolEntry*>(operands[0]->getEntry())
+                 ->isGlobal()) {
+        auto internal_reg1 = genMachineVReg();
+        // example: load r0, addr_a
+        cur_inst = new LoadMInstruction(cur_block, internal_reg1, dst);
+        cur_block->InsertInst(cur_inst);
+        // example: store r1, [r0]
+        cur_inst = new StoreMInstruction(cur_block, src, internal_reg1);
+        cur_block->InsertInst(cur_inst);
+    }
 }
 
 void BinaryInstruction::genMachineCode(AsmBuilder* builder)

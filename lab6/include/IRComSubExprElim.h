@@ -10,8 +10,29 @@ struct Expr
     // 用于调用find函数
     bool operator==(const Expr &other) const
     {
-        // TODO: 判断两个表达式是否相同
+        // _TODO: 判断两个表达式是否相同
         // 两个表达式相同 <==> 两个表达式对应的指令的类型和操作数均相同
+        if (inst->getType() == other.inst->getType())
+        {
+            // 如果类型相同，则比较操作数
+            auto operands1 = inst->getOperands();
+            auto operands2 = other.inst->getOperands();
+
+            if (operands1.size() == operands2.size())
+            {
+                for (size_t i = 0; i < operands1.size(); ++i)
+                {
+                    // 操作数是否相等
+                    if (operands1[i] != operands2[i])
+                    {
+                        return false;
+                    }
+                }
+                // 都相等
+                return true;
+            }
+        }
+
         return false;
     };
 };
