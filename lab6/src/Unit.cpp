@@ -20,6 +20,8 @@ void Unit::genMachineCode(MachineUnit* munit)
 {
     AsmBuilder* builder = new AsmBuilder();
     builder->setUnit(munit);
+    for(auto &global : global_list)
+        global->genMachineCode(builder);
     for (auto &func : func_list)
         func->genMachineCode(builder);
 }

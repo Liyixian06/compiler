@@ -54,10 +54,10 @@ void Ast::genCode(Unit *unit)
     Node::setIRBuilder(builder);
     root->genCode();
 
-    fprintf(yyout, "declare void @putint(i32)\n");
-    fprintf(yyout, "declare void @putch(i32)\n");
-    fprintf(yyout, "declare i32 @getint()\n");
-    fprintf(yyout, "declare i32 @getch()\n");
+    //fprintf(yyout, "declare void @putint(i32)\n");
+    //fprintf(yyout, "declare void @putch(i32)\n");
+    //fprintf(yyout, "declare i32 @getint()\n");
+    //fprintf(yyout, "declare i32 @getch()\n");
 }
 
 void BinaryExpr::genCode()

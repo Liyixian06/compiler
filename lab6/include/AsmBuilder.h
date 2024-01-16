@@ -31,6 +31,16 @@ public:
         }
         return false;
     }
+    static char* erase_at_from_str(char* str){
+        char* _str = (char*)malloc(sizeof(str)+1);
+        int _i = 0;
+        for(int i = 0; i < sizeof(str); i++){
+            if (str[i] != '@')
+                _str[_i++] = str[i];
+        }
+        _str[_i] = '\0';
+        return _str;
+    }
 };
 
 

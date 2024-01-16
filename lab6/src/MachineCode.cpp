@@ -1,6 +1,7 @@
 #include "MachineCode.h"
 #include "AsmBuilder.h"
 #include "Type.h"
+#include <string>
 extern FILE* yyout;
 
 MachineOperand::MachineOperand(int tp, int val)
@@ -16,6 +17,13 @@ MachineOperand::MachineOperand(std::string label)
 {
     this->type = MachineOperand::LABEL;
     this->label = label;
+}
+
+MachineOperand::MachineOperand(std::string label, bool isfunc)
+{
+    this->type = MachineOperand::LABEL;
+    this->label = label;
+    this->isfunc = isfunc;
 }
 
 bool MachineOperand::operator==(const MachineOperand&a) const
@@ -85,12 +93,13 @@ void MachineOperand::output()
         PrintReg();
         break;
     case LABEL:
-        if (this->label.substr(0, 2) == ".L") // 标签
+        if (this->label.substr(0, 2) == ".L" || isfunc) // 标签或函数
             fprintf(yyout, "%s", this->label.c_str());
-        else if (this->label.substr(0, 1) == "@") // 函数
-            fprintf(yyout, "%s", this->label.c_str() + 1);
-        else // 变量
-            fprintf(yyout, "addr_%s", this->label.c_str());
+        else {// 变量
+            char* var_name = (char*)this->label.c_str();
+            var_name = AsmBuilder::erase_at_from_str(var_name);
+            fprintf(yyout, "addr_%s", var_name);
+        }
     default:
         break;
     }
@@ -324,13 +333,12 @@ void BranchMInstruction::output()
     fprintf(yyout, "\n");
 }
 
-CmpMInstruction::CmpMInstruction(MachineBlock* p, int op, 
+CmpMInstruction::CmpMInstruction(MachineBlock* p, 
     MachineOperand* src1, MachineOperand* src2, 
     int cond)
 {
     this->parent = p;
     this->type = MachineInstruction::CMP;
-    this->op = op;
     this->cond = cond;
     p->setCmpCond(cond);
     this->use_list.push_back(src1);
@@ -362,6 +370,28 @@ StackMInstrcuton::StackMInstrcuton(MachineBlock* p, int op,
     {
         this->use_list.push_back(operand);
         operand->setParent(this);
+    }
+}
+
+StackMInstrcuton::StackMInstrcuton(MachineBlock *p, int op,
+    std::vector<MachineOperand *> srcs,
+    MachineOperand *src,
+    MachineOperand *src1,
+    int cond)
+{
+    this->parent = p;
+    this->type = MachineInstruction::STACK;
+    this->op = op;
+    this->cond = cond;
+    if (srcs.size())
+        for (auto it = srcs.begin(); it != srcs.end(); it++)
+            this->use_list.push_back(*it);
+    this->use_list.push_back(src);
+    src->setParent(this);
+    if (src1)
+    {
+        this->use_list.push_back(src1);
+        src1->setParent(this);
     }
 }
 
@@ -405,18 +435,26 @@ GlobalMInstruction::GlobalMInstruction(MachineBlock *p, MachineOperand *dst, std
 
 void GlobalMInstruction::output_decl()
 {
-    fprintf(yyout, "\t.global %s\n", def_list[0]->getLabel().c_str());
+    char* global_name = (char*)def_list[0]->getLabel().c_str();
+    global_name = AsmBuilder::erase_at_from_str(global_name);
+    fprintf(yyout, "\t.global %s\n", global_name);
     fprintf(yyout, "\t.align 4\n");
-    fprintf(yyout, "\t.size %s, %d\n", def_list[0]->getLabel().c_str(), (int)(4 * use_list.size()));
-    fprintf(yyout, "%s:\n", def_list[0]->getLabel().c_str());
+    fprintf(yyout, "\t.size %s, %d\n", global_name, (int)(4 * use_list.size()));
+    fprintf(yyout, "%s:\n", global_name);
+    if(use_list.empty())
+        fprintf(yyout, "\t.word 0\n");
+    else{
     for (unsigned int i = 0; i < use_list.size(); i++)
-         fprintf(yyout, "\t.word %d\n", use_list[i]->getVal());
+        fprintf(yyout, "\t.word %d\n", use_list[i]->getVal());
+    }
 };
 
 void GlobalMInstruction::output()
 {
-    fprintf(yyout, "addr_%s:\n", def_list[0]->getLabel().c_str());
-    fprintf(yyout, "\t.word %s\n", def_list[0]->getLabel().c_str());
+    char* global_name = (char*)def_list[0]->getLabel().c_str();
+    global_name = AsmBuilder::erase_at_from_str(global_name);
+    fprintf(yyout, "addr_%s:\n", global_name);
+    fprintf(yyout, "\t.word %s\n", global_name);
 };
 
 MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) 
@@ -424,43 +462,25 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr)
     this->parent = p; 
     this->sym_ptr = sym_ptr; 
     this->stack_size = 0;
-    addSavedRegs(11); // fp
-    addSavedRegs(14); // lr
+    //addSavedRegs(11); // fp
+    //addSavedRegs(14); // lr
 };
-
-void MachineBlock::insertBefore(MachineInstruction *insertee, MachineInstruction *pin)
-{
-    auto it = std::find(inst_list.begin(), inst_list.end(), pin);
-    inst_list.insert(it, insertee);
-}
-
-void MachineBlock::insertAfter(MachineInstruction *insertee, MachineInstruction *pin)
-{
-    auto it = std::find(inst_list.begin(), inst_list.end(), pin);
-    it++;
-    inst_list.insert(it, insertee);
-}
-
-void MachineBlock::backPatch(std::vector<MachineOperand *> saved_regs)
-{
-    std::vector<MachineOperand *> regs;
-    for (auto reg : saved_regs)
-    {
-        regs.push_back(reg);
-    }
-    for (auto inst : unsure_insts) {
-        if (inst->isPOP())
-                dynamic_cast<StackMInstrcuton* >(inst)->setRegs(regs);
-        else if (inst->isLoad())
-            dynamic_cast<LoadMInstruction* >(inst)->setOff(saved_regs.size() * 4);
-    }
-}
 
 void MachineBlock::output()
 {
     fprintf(yyout, ".L%d:\n", this->no);
-    for(auto iter : inst_list)
+    //fprintf(stderr, "MachineBlock::output, .L%d:\n", this->no);
+    for (auto iter : inst_list)
+    {
+        if (iter->isBX())
+        {
+            auto fp = new MachineOperand(MachineOperand::REG, 11);
+            auto lr = new MachineOperand(MachineOperand::REG, 14);
+            auto cur_inst = new StackMInstrcuton(this, StackMInstrcuton::POP, parent->getSavedRegs(), fp, lr);
+            cur_inst->output();
+        }
         iter->output();
+    }
 }
 
 std::vector<MachineOperand *> MachineFunction::getSavedRegs()
@@ -489,29 +509,31 @@ void MachineFunction::output()
     auto fp = new MachineOperand(MachineOperand::REG, 11);
     auto sp = new MachineOperand(MachineOperand::REG, 13);
     auto lr = new MachineOperand(MachineOperand::REG, 14);
-    std::vector<MachineOperand*> saved_regs = this->getSavedRegs();
-    (new StackMInstrcuton(entry, StackMInstrcuton::PUSH, saved_regs))->output();
-    (new MovMInstruction(entry, MovMInstruction::MOV, fp, sp))->output();
+    (new StackMInstrcuton(nullptr, StackMInstrcuton::PUSH, getSavedRegs(), fp, lr))->output();
+
+    (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();
+    int off = AllocSpace(0);
     // 用 SUB 指令为局部变量生成栈内空间（实际栈内空间大小已知）
     // SUB 只能操作 8 位立即数，需要分段处理
-    int stackSize = stack_size;
-    auto stSize = new MachineOperand(MachineOperand::IMM, stackSize);
-    if (AsmBuilder::is_imm_legal(stackSize))
-        (new BinaryMInstruction(entry, BinaryMInstruction::SUB, sp, sp, stSize))->output();
+    auto size = new MachineOperand(MachineOperand::IMM, off);
+    if (off < -255 || off > 255)
+    {
+        auto r4 = new MachineOperand(MachineOperand::REG, 4);
+        // 先把低 16 位放到寄存器里
+        (new MovMInstruction(nullptr, MovMInstruction::MOV, r4, new MachineOperand(MachineOperand::IMM, off & 0xffff)))->output();
+        // 再把高 16 位的两个字节加到寄存器里
+        if (off & 0xffff00)
+            (new BinaryMInstruction(nullptr, BinaryMInstruction::ADD, r4, r4, new MachineOperand(MachineOperand::IMM, off & 0xff0000)))->output();
+        if (off & 0xff000000)
+            (new BinaryMInstruction(nullptr, BinaryMInstruction::ADD, r4, r4, new MachineOperand(MachineOperand::IMM, off & 0xff000000)))->output();
+        (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp, r4))->output();
+    }
     else
     {
-        if (stackSize & 0xff)
-            (new BinaryMInstruction(entry, BinaryMInstruction::SUB, sp, sp, new MachineOperand(MachineOperand::IMM, stackSize & 0xff)))->output();
-        if (stackSize & 0xff00)
-            (new BinaryMInstruction(entry, BinaryMInstruction::SUB, sp, sp, new MachineOperand(MachineOperand::IMM, stackSize & 0xff00)))->output();
-        if (stackSize & 0xff0000)
-            (new BinaryMInstruction(entry, BinaryMInstruction::SUB, sp, sp, new MachineOperand(MachineOperand::IMM, stackSize & 0xff0000)))->output();
-        if (stackSize & 0xff000000)
-            (new BinaryMInstruction(entry, BinaryMInstruction::SUB, sp, sp, new MachineOperand(MachineOperand::IMM, stackSize & 0xff000000)))->output();
+        (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp, size))->output();
     }
-
-    for(auto iter : block_list){
-        iter->backPatch(saved_regs);
+    for (auto iter : block_list)
+    {
         iter->output();
     }
     fprintf(yyout, "\n");

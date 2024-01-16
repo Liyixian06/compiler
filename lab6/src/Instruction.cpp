@@ -555,16 +555,29 @@ void AllocaInstruction::genMachineCode(AsmBuilder* builder)
 void GlobalAllocaInstruction::genMachineCode(AsmBuilder* builder)
 {
     //TODO
+    //fprintf(stderr, "insert global\n");
     auto cur_block = builder->getBlock();
     auto cur_unit = builder->getUnit();
     MachineInstruction *cur_inst = 0;
     auto dst = genMachineOperand(operands[0]);
+    std::vector<MachineOperand*> src = {};
+    if(value)
+        src.push_back(genMachineOperand(value));
+    else{
+        //fprintf(stderr, "global no value\n");
+        SymbolEntry* s = new ConstantSymbolEntry(TypeSystem::constType, 0);
+        Operand* n1 = new Operand(s);
+        src.push_back(genMachineOperand(n1));
+    }
+    cur_inst = new GlobalMInstruction(cur_block, dst, src, se);
+    cur_unit->InsertGlobal(dynamic_cast<GlobalMInstruction*>(cur_inst));
+    /*
     if(value){
         // 处理有值的情况，加载全局分配的值到目的机器操作数
         auto src = genMachineOperand(value);
         cur_inst = new LoadMInstruction(cur_block, dst, src);
         cur_block->InsertInst(cur_inst);
-    }
+    }*/
 }
 
 void LoadInstruction::genMachineCode(AsmBuilder* builder)
@@ -703,7 +716,7 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder)
         cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD, dst, src1, src2);
         break;
     case SUB:
-        cur_inst = new BinaryMInstruction(cur_block, BinaryInstruction::SUB, dst, src1, src2);
+        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::SUB, dst, src1, src2);
         break;
     case MUL:
         if (src2->isImm())
@@ -776,7 +789,7 @@ void UnaryInstruction::genMachineCode(AsmBuilder* builder)
         cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD, dst, imm_0, src);
         break;
     case SUB:
-        cur_inst = new BinaryMInstruction(cur_block, BinaryInstruction::SUB, dst, imm_0, src);
+        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::SUB, dst, imm_0, src);
         break;
     default:
         break;
@@ -805,158 +818,63 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder)
         cur_block->InsertInst(cur_inst);
         src2 = new MachineOperand(*internal_reg);
     }
-    cur_inst = new CmpMInstruction(cur_block, CmpMInstruction::CMP, src1, src2);
+    cur_inst = new CmpMInstruction(cur_block, src1, src2);
     cur_block->InsertInst(cur_inst);
 
-    CondBrInstruction *nxt_cond = dynamic_cast<CondBrInstruction *>(this->getNext());
-    if (nxt_cond != 0)
+    auto dst = genMachineOperand(operands[0]);
+    int OP_TRUE = INT16_MIN;
+    int OP_FALSE = INT16_MIN;
+    switch (opcode)
     {
-        switch (this->opcode)
-        {
-        case E:
-            nxt_cond->setOp(CondBrInstruction::E);
-            break;
-        case NE:
-            nxt_cond->setOp(CondBrInstruction::NE);
-            break;
-        case LE:
-            nxt_cond->setOp(CondBrInstruction::LE);
-            break;
-        case GE:
-            nxt_cond->setOp(CondBrInstruction::GE);
-            break;
-        case L:
-            nxt_cond->setOp(CondBrInstruction::L);
-            break;
-        case G:
-            nxt_cond->setOp(CondBrInstruction::G);
-            break;
-        default:
-            break;
-        }
-        std::string label;
-        label = ".L";
-        std::stringstream s;
-        auto bb = nxt_cond->getTrueBranch();
-        s << bb->getNo();
-        std::string temp;
-        s >> temp;
-        label += temp;
-        // dst为真分支对应的基本块编号
-        auto dst = new MachineOperand(label);
-        int op;
-        switch (opcode)
-        {
-        case E:
-            op = BranchMInstruction::EQ;
-            break;
-        case NE:
-            op = BranchMInstruction::NE;
-            break;
-        case LE:
-            op = BranchMInstruction::LE;
-            break;
-        case GE:
-            op = BranchMInstruction::GE;
-            break;
-        case L:
-            op = BranchMInstruction::LT;
-            break;
-        case G:
-            op = BranchMInstruction::GT;
-            break;
-        default:
-            break;
-        }
-        cur_inst = new BranchMInstruction(cur_block, op, dst);
-        cur_block->InsertInst(cur_inst);
+    case E:
+        OP_TRUE = CmpMInstruction::EQ;
+        OP_FALSE = CmpMInstruction::NE;
+        break;
+    case NE:
+        OP_TRUE = CmpMInstruction::NE;
+        OP_FALSE = CmpMInstruction::EQ;
+        break;
+    case L:
+        OP_TRUE = CmpMInstruction::LT;
+        OP_FALSE = CmpMInstruction::GE;
+        break;
+    case LE:
+        OP_TRUE = CmpMInstruction::LE;
+        OP_FALSE = CmpMInstruction::GT;
+        break;
+    case G:
+        OP_TRUE = CmpMInstruction::GT;
+        OP_FALSE = CmpMInstruction::LE;
+        break;
+    case GE:
+        OP_TRUE = CmpMInstruction::GE;
+        OP_FALSE = CmpMInstruction::LT;
+        break;
+    default:
+        break;
     }
-    // nxt_cond is not br  ==> need to save the result of cmp
-    else
-    {
-        int op;
-        switch (opcode)
-        {
-        case E:
-            op = MachineInstruction::EQ;
-            break;
-        case NE:
-            op = MachineInstruction::NE;
-            break;
-        case LE:
-            op = MachineInstruction::LE;
-            break;
-        case GE:
-            op = MachineInstruction::GE;
-            break;
-        case L:
-            op = MachineInstruction::LT;
-            break;
-        case G:
-            op = MachineInstruction::GT;
-            break;
-        default:
-            break;
-        }
-
-        auto dst = genMachineOperand(operands[0]);
-        // 生成mov指令存储cmp结果
-        cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst, new MachineOperand(MachineOperand::IMM, 1), op);
-        cur_block->InsertInst(cur_inst);
-        switch (op)
-        {
-        case MachineInstruction::EQ:
-            op = MachineInstruction::NE;
-            break;
-        case MachineInstruction::NE:
-            op = MachineInstruction::EQ;
-            break;
-        case MachineInstruction::GE:
-            op = MachineInstruction::LT;
-            break;
-        case MachineInstruction::LE:
-            op = MachineInstruction::GT;
-            break;
-        case MachineInstruction::GT:
-            op = MachineInstruction::LE;
-            break;
-        case MachineInstruction::LT:
-            op = MachineInstruction::GE;
-            break;
-        default:
-            break;
-        }
-        cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst, new MachineOperand(MachineOperand::IMM, 0), op);
-        cur_block->InsertInst(cur_inst);
-    }
+    MachineOperand* One = genMachineImm(1);
+    MachineOperand* Zero = genMachineImm(0);
+    cur_block->InsertInst(new MovMInstruction(cur_block, MovMInstruction::MOV, dst, One, OP_TRUE));
+    cur_block->InsertInst(new MovMInstruction(cur_block, MovMInstruction::MOV, dst, Zero, OP_FALSE));
+    builder->setCmpOpcode(OP_TRUE);
 }
 
 void UncondBrInstruction::genMachineCode(AsmBuilder* builder)
 {
-    auto cur_bb = builder->getBlock();
-    std::string label;
-    label = ".L";
-    std::stringstream s;
-    s << branch->getNo();
-    std::string temp;
-    s >> temp;
-    label += temp;
-    auto dst = new MachineOperand(label);
-    cur_bb->InsertInst(new BranchMInstruction(cur_bb, BranchMInstruction::B, dst));
+    auto cur_block = builder->getBlock();
+    MachineOperand* dst = genMachineLabel(branch->getNo());
+    cur_block->InsertInst(new BranchMInstruction(cur_block, BranchMInstruction::B, dst));
 }
 
 void CondBrInstruction::genMachineCode(AsmBuilder* builder)
 {
-    auto cur_bb = builder->getBlock();
-    std::string label;
-    label = ".L";
-    std::stringstream s;
-    s << false_branch->getNo();
-    std::string temp;
-    s >> temp;
-    label += temp;
-    auto dst = new MachineOperand(label);
-    cur_bb->InsertInst(new BranchMInstruction(cur_bb, BranchMInstruction::B, dst));
+    auto cur_block = builder->getBlock();
+    auto Cond = builder->getCmpOpcode();
+    auto dst = genMachineLabel(true_branch->getNo());
+    cur_block->InsertInst(new BranchMInstruction(cur_block, BranchMInstruction::B, dst, Cond));//条件跳转
+    dst = genMachineLabel(false_branch->getNo());
+    cur_block->InsertInst(new BranchMInstruction(cur_block, BranchMInstruction::B, dst));
 }
 
 void RetInstruction::genMachineCode(AsmBuilder* builder)
@@ -1032,7 +950,7 @@ void CallInstruction::genMachineCode(AsmBuilder* builder)
     }
     // example:  bl func
     std::string label = dynamic_cast<IdentifierSymbolEntry *>(this->getEntry())->get_name();
-    auto dst = new MachineOperand(label);
+    auto dst = new MachineOperand(label, 1);
     cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::BL, dst);
     cur_block->InsertInst(cur_inst);
 

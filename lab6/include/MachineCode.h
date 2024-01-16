@@ -31,10 +31,12 @@ private:
     int val;  // value of immediate number
     int reg_no; // register no
     std::string label; // address label
+    bool isfunc = false;
 public:
     enum { IMM, VREG, REG, LABEL }; // 立即数，虚拟寄存器，物理寄存器，地址标签
     MachineOperand(int tp, int val);
     MachineOperand(std::string label);
+    MachineOperand(std::string label, bool isfunc);
     bool operator == (const MachineOperand&) const;
     bool operator < (const MachineOperand&) const;
     bool isImm() { return this->type == IMM; }; 
@@ -82,6 +84,7 @@ public:
     bool isStack() { return type == STACK; };
     bool isPOP() { return type == STACK && this->op == 1; }
     bool isLoad() { return type == LOAD; };
+    bool isBX() const { return type == BRANCH && op == 2; };
 };
 
 class BinaryMInstruction : public MachineInstruction
@@ -140,7 +143,7 @@ class CmpMInstruction : public MachineInstruction
 {
 public:
     enum opType { CMP };
-    CmpMInstruction(MachineBlock* p, int op = CMP,
+    CmpMInstruction(MachineBlock* p, 
                 MachineOperand* src1, MachineOperand* src2, 
                 int cond = MachineInstruction::NONE);
     void output();
@@ -152,6 +155,11 @@ public:
     enum opType { PUSH, POP };
     StackMInstrcuton(MachineBlock* p, int op, 
                 std::vector<MachineOperand*> srcs,
+                int cond = MachineInstruction::NONE);
+    StackMInstrcuton(MachineBlock *p, int op,
+                std::vector<MachineOperand *> srcs,
+                MachineOperand *src,
+                MachineOperand *src1 = nullptr,
                 int cond = MachineInstruction::NONE);
     void setRegs(std::vector<MachineOperand *> regs) {
         use_list.assign(regs.begin(), regs.end());
@@ -192,10 +200,10 @@ public:
     void InsertInst(MachineInstruction* inst) { this->inst_list.push_back(inst); };
     void addPred(MachineBlock* p) { this->pred.push_back(p); };
     void addSucc(MachineBlock* s) { this->succ.push_back(s); };
-    void insertBefore(MachineInstruction *, MachineInstruction *);
-    void insertAfter(MachineInstruction *, MachineInstruction *);
-    void insertFront(MachineInstruction *inst) { this->inst_list.insert(inst_list.begin(), inst); };
-    void backPatch(std::vector<MachineOperand *>);
+    //void insertBefore(MachineInstruction *, MachineInstruction *);
+    //void insertAfter(MachineInstruction *, MachineInstruction *);
+    //void insertFront(MachineInstruction *inst) { this->inst_list.insert(inst_list.begin(), inst); };
+    //void backPatch(std::vector<MachineOperand *>);
     void eraseInst(MachineInstruction *inst)
     {
         this->inst_list.erase(find(inst_list.begin(), inst_list.end(), inst));
