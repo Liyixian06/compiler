@@ -463,6 +463,7 @@ void XorInstruction::output() const
 
 CallInstruction::CallInstruction(Operand *dst, SymbolEntry *se, std::vector<Operand*> params, BasicBlock *insert_bb) : Instruction(CALL, insert_bb)
 {
+    operands.push_back(dst);
     this->dst = dst;
     this->func = se;
     if(dst) dst->setDef(this);
@@ -490,7 +491,7 @@ void CallInstruction::output() const
         fprintf(yyout, "%s = ", dst->toStr().c_str());
     FunctionType* type = (FunctionType*)(func->getType());
     fprintf(yyout, "call %s %s(", type->getRetType()->toStr().c_str(), func->toStr().c_str());
-    for(long unsigned i = 0; i<operands.size(); i++){
+    for(long unsigned i = 1; i<operands.size(); i++){
         if(i!=0)
             fprintf(yyout, ",");
         fprintf(yyout, "%s %s", (operands[i]->getType()->toStr() == "const"? "i32" : operands[i]->getType()->toStr().c_str()), operands[i]->toStr().c_str());
@@ -934,11 +935,9 @@ void CallInstruction::genMachineCode(AsmBuilder* builder)
     auto cur_block = builder->getBlock();
     MachineInstruction *cur_inst = 0;
 
-    for (unsigned int i = 0; i < operands.size(); i++)
+    for (unsigned int i = 1; i < operands.size(); i++)
     {
         fprintf(stderr, "passing param\n");
-        // ����ֵ���ݰ�˳�����ڼĴ���r0,r1,r2,r3�����4������ֵ�������ջ��
-        // r0���ڴ�ŷ���ֵ
         if (i >= 4)
         {
             auto reg1 = genMachineVReg();
@@ -953,7 +952,7 @@ void CallInstruction::genMachineCode(AsmBuilder* builder)
         else
         {
             // auto reg1 = genMachineVReg();
-            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, genMachineReg(i), genMachineOperand(operands[i]));
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, genMachineReg(i-1), genMachineOperand(operands[i]));
             cur_block->InsertInst(cur_inst);
         }
     }
@@ -981,7 +980,6 @@ void CallInstruction::genMachineCode(AsmBuilder* builder)
     if (dynamic_cast<FunctionType *>(this->getEntry()->getType())->getRetType()->toStr() != "void")
     {
         auto ret = genMachineOperand(operands[0]);
-        // r0�洢��������ֵ
         auto r0 = genMachineReg(0);
         cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, ret, r0);
         cur_block->InsertInst(cur_inst);
