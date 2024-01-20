@@ -1,4 +1,6 @@
 #include "Unit.h"
+#include "Type.h"
+extern FILE *yyout;
 
 void Unit::insertFunc(Function *f)
 {
@@ -14,6 +16,8 @@ void Unit::output() const
 {
     for (auto &func : func_list)
         func->output();
+    for (auto &func : sys_func_list)
+        func->outputsysfunc();
 }
 
 void Unit::genMachineCode(MachineUnit* munit) 

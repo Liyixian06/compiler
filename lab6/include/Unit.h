@@ -14,6 +14,7 @@ class Unit
 private:
     std::vector<Function *> func_list;
     std::vector<Instruction *> global_list;
+    std::vector<IdentifierSymbolEntry*> sys_func_list;
 public:
     Unit() = default;
     ~Unit() ;
@@ -25,6 +26,7 @@ public:
     reverse_iterator rbegin() { return func_list.rbegin(); };
     reverse_iterator rend() { return func_list.rend(); };
     void push_global(Instruction *src) { global_list.push_back(src); };
+    void push_sys_func(IdentifierSymbolEntry* func) { sys_func_list.push_back(func); }
     /*ÐÂÔö*/
     void genMachineCode(MachineUnit* munit);
 };

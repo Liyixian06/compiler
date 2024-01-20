@@ -2,6 +2,7 @@
 #include "Type.h"
 #include <iostream>
 #include <sstream>
+extern FILE* yyout;
 
 SymbolEntry::SymbolEntry(Type *type, int kind) 
 {
@@ -30,6 +31,25 @@ IdentifierSymbolEntry::IdentifierSymbolEntry(Type *type, std::string name, int s
 std::string IdentifierSymbolEntry::toStr()
 {
     return "@" + name;
+}
+
+void IdentifierSymbolEntry::outputsysfunc()
+{
+    /*
+    fprintf(yyout, "declare %s @%s(", 
+        dynamic_cast<FunctionType*>(type)->getRetType()->toStr().c_str(), (const char*)name.c_str());
+    bool first = true;
+    for(auto type : dynamic_cast<FunctionType*>(type)->getParamsType()){
+        if(!type->isVoid()){
+            if(!first){
+                first = false;
+                fprintf(yyout, ", ");
+            }
+            fprintf(yyout,"%s", type->toStr().c_str());
+        }
+    }
+    fprintf(yyout, ")\n");
+    */
 }
 
 TemporarySymbolEntry::TemporarySymbolEntry(Type *type, int label) : SymbolEntry(type, SymbolEntry::TEMPORARY)

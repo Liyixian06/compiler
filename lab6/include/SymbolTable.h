@@ -92,6 +92,7 @@ public:
     Operand* getAddr() {return addr;};
     // You can add any function you need here.
     std::string get_name(){return name;}
+    void outputsysfunc();
 };
 
 

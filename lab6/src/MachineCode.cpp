@@ -437,9 +437,9 @@ void GlobalMInstruction::output_decl()
 {
     char* global_name = (char*)def_list[0]->getLabel().c_str();
     global_name = AsmBuilder::erase_at_from_str(global_name);
-    fprintf(yyout, "\t.global %s\n", global_name);
-    fprintf(yyout, "\t.align 4\n");
-    fprintf(yyout, "\t.size %s, %d\n", global_name, (int)(4 * use_list.size()));
+    fprintf(yyout, ".global %s\n", global_name);
+    //fprintf(yyout, ".align 4\n");
+    fprintf(yyout, ".size %s, %d\n", global_name, (int)(4 * use_list.size()));
     fprintf(yyout, "%s:\n", global_name);
     if(use_list.empty())
         fprintf(yyout, "\t.word 0\n");
@@ -563,7 +563,7 @@ void MachineUnit::output()
     fprintf(yyout, "\t.arm\n");
     fprintf(yyout, "\t.data\n");
     PrintGlobalDecl();
-    fprintf(yyout, "\t.text\n");
+    fprintf(yyout, "\n\t.text\n");
     for(auto iter : func_list)
         iter->output();
     PrintGlobalBridge();

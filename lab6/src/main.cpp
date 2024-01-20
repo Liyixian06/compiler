@@ -68,46 +68,55 @@ int main(int argc, char *argv[])
     funcType = new FunctionType(TypeSystem::intType, {});
     SymbolEntry *se = new IdentifierSymbolEntry(funcType, "getint", identifiers->getLevel());
     identifiers->install("getint", se);
+    unit.push_sys_func((IdentifierSymbolEntry*)se);
 
     // getch
     funcType = new FunctionType(TypeSystem::intType, {});
     se = new IdentifierSymbolEntry(funcType, "getch", identifiers->getLevel());
     identifiers->install("getch", se);
+    unit.push_sys_func((IdentifierSymbolEntry*)se);
 
     // getarray
     funcType = new FunctionType(TypeSystem::intType, {});
     se = new IdentifierSymbolEntry(funcType, "getarray", identifiers->getLevel());
     identifiers->install("getarray", se);
+    unit.push_sys_func((IdentifierSymbolEntry*)se);
 
     // putint
     funcType = new FunctionType(TypeSystem::voidType, {TypeSystem::intType});
     se = new IdentifierSymbolEntry(funcType, "putint", identifiers->getLevel());
     identifiers->install("putint", se);
+    unit.push_sys_func((IdentifierSymbolEntry*)se);
 
     // putch
     funcType = new FunctionType(TypeSystem::voidType, {TypeSystem::intType});
     se = new IdentifierSymbolEntry(funcType, "putch", identifiers->getLevel());
     identifiers->install("putch", se);
+    unit.push_sys_func((IdentifierSymbolEntry*)se);
 
     // putarray
     funcType = new FunctionType(TypeSystem::voidType, {});
     se = new IdentifierSymbolEntry(funcType, "putarray", identifiers->getLevel());
     identifiers->install("putarray", se);
+    unit.push_sys_func((IdentifierSymbolEntry*)se);
 
     // putf
     funcType = new FunctionType(TypeSystem::voidType, {});
     se = new IdentifierSymbolEntry(funcType, "putf", identifiers->getLevel());
     identifiers->install("putf", se);
+    unit.push_sys_func((IdentifierSymbolEntry*)se);
 
     // starttime
     funcType = new FunctionType(TypeSystem::voidType, {});
     se = new IdentifierSymbolEntry(funcType, "starttime", identifiers->getLevel());
     identifiers->install("starttime", se);
+    unit.push_sys_func((IdentifierSymbolEntry*)se);
 
     // stoptime
     funcType = new FunctionType(TypeSystem::voidType, {});
     se = new IdentifierSymbolEntry(funcType, "stoptime", identifiers->getLevel());
     identifiers->install("stoptime", se);
+    unit.push_sys_func((IdentifierSymbolEntry*)se);
 
     yyparse();
     if(dump_type == AST){
