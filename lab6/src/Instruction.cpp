@@ -501,11 +501,15 @@ void CallInstruction::output() const
 
 
 /*Machine Operation******************************************************************************************************************************/
-MachineOperand* Instruction::genMachineOperand(Operand* ope)
+MachineOperand* Instruction::genMachineOperand(Operand* ope, bool is_para = false)
 {
     auto se = ope->getEntry();
     MachineOperand* mope = nullptr;
-    if(se->isConstant())
+    if(is_para){
+        mope = new MachineOperand(MachineOperand::REG, parent->getParent()->last_para_reg);
+        (parent->getParent()->last_para_reg)++;
+    }
+    else if(se->isConstant())
         mope = new MachineOperand(MachineOperand::IMM, dynamic_cast<ConstantSymbolEntry*>(se)->getValue());
     else if(se->isTemporary())
         mope = new MachineOperand(MachineOperand::VREG, dynamic_cast<TemporarySymbolEntry*>(se)->getLabel());
@@ -650,7 +654,12 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder)
     MachineOperand* src = nullptr;
 
     dst = genMachineOperand(operands[0]);
-    src = genMachineOperand(operands[1]);
+    bool is_para = false;
+    for (auto &p : parent->getParent()->params){
+        if (operands[1] == p)
+            is_para = true;
+    }
+    src = genMachineOperand(operands[1], is_para);
 
     // store immediate
     if (operands[1]->getEntry()->isConstant()) {

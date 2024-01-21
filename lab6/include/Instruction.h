@@ -27,7 +27,7 @@ public:
     virtual Operand *getDef() { return nullptr; }
     virtual std::vector<Operand *> getUse() { return {}; }
     virtual void output() const = 0;
-    MachineOperand* genMachineOperand(Operand*);
+    MachineOperand* genMachineOperand(Operand*, bool is_para);
     MachineOperand* genMachineReg(int reg);
     MachineOperand* genMachineVReg();
     MachineOperand* genMachineImm(int val);

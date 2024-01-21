@@ -27,6 +27,7 @@ private:
 
 public:
     std::vector<Operand*> params; // 函数的参数类型
+    int last_para_reg = 0;
 
     Function(Unit *, SymbolEntry *);
     ~Function();

@@ -37,6 +37,9 @@ immediate expression requires a # prefix -- `mov r0,v34`
 **01.20**  
 level1-1 Accept 35/38  
 46,51,1073 - getint 接收外部输入问题  
-callinstruction 没有给返回值留地方接收
+callinstruction 没有给返回值留地方接收  
+solved, level1-1 all accepted
 
 level1-2 Accept 11/20  
+函数接受参数时的寄存器问题，因为 TemporarySymbolEntry 生成的是 VREG  
+solution：在 getMachineOperand 时判断一下是不是当前 Function 的 param

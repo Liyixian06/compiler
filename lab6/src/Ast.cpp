@@ -468,8 +468,8 @@ void FuncParam::genCode()
 
     BasicBlock* bb;
     bb = builder->getInsertBB();
-    new StoreInstruction(addr, id->getOperand(), bb);
     func->push_para(id->getOperand());
+    new StoreInstruction(addr, id->getOperand(), bb);
     if(expr){
         expr->genCode();
         new StoreInstruction(addr, expr->getOperand(), bb);
